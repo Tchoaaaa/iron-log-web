@@ -1,0 +1,217 @@
+import { supabase } from "./supabaseClient";
+
+// ---------------------------------------------------------------------------
+// All reads/writes below are scoped to the signed-in user by Row Level
+// Security in the database (see supabase-schema.sql). `user_id` columns
+// default to auth.uid() server-side, so the client never sets them and a
+// user physically cannot read or write another user's rows.
+//
+// The per-user reads ALSO filter by user_id explicitly. Admins are granted a
+// wider SELECT by RLS (for the dashboard), and this keeps their *own* app
+// view scoped to just their data.
+// ---------------------------------------------------------------------------
+
+async function requireUserId() {
+  const { data } = await supabase.auth.getUser();
+  const id = data.user?.id ?? null;
+  if (!id) throw new Error("Not authenticated");
+  return id;
+}
+
+// ---------- auth ----------
+export async function signUp({ email, password, displayName }) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { display_name: (displayName || "").trim() } },
+  });
+  if (error) throw error;
+  // If email confirmation is enabled, data.session is null until confirmed.
+  return { needsConfirmation: !data.session, session: data.session };
+}
+
+export async function signIn({ email, password }) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data.session;
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+// ---------- profile ----------
+export async function getProfile() {
+  const id = await requireUserId();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("display_name, avatar_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProfile(patch) {
+  const id = await requireUserId();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+// ---------- exercise library ----------
+export async function listExercisesOrSeed(defaults) {
+  const uidval = await requireUserId();
+  const { data, error } = await supabase
+    .from("exercises")
+    .select("name, category")
+    .eq("user_id", uidval)
+    .order("name", { ascending: true });
+  if (error) throw error;
+  if (data.length > 0) return data;
+
+  // First run for this account: seed the default library.
+  const rows = defaults.map((e) => ({ name: e.name, category: e.category }));
+  const { data: seeded, error: seedErr } = await supabase
+    .from("exercises")
+    .insert(rows)
+    .select("name, category");
+  if (seedErr) {
+    // Seeding is best-effort; fall back to the in-memory defaults.
+    return defaults;
+  }
+  return seeded;
+}
+
+export async function addExercise({ name, category }) {
+  const { error } = await supabase
+    .from("exercises")
+    .insert({ name, category: category || "Perso" });
+  // Ignore unique-violation: the exercise already exists for this user.
+  if (error && error.code !== "23505") throw error;
+}
+
+// ---------- templates ----------
+export async function listTemplates() {
+  const uidval = await requireUserId();
+  const { data, error } = await supabase
+    .from("templates")
+    .select("id, name, exercises")
+    .eq("user_id", uidval)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function saveTemplate({ id, name, exercises }) {
+  if (id) {
+    const { data, error } = await supabase
+      .from("templates")
+      .update({ name, exercises, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id, name, exercises")
+      .single();
+    if (error) throw error;
+    return data;
+  }
+  const { data, error } = await supabase
+    .from("templates")
+    .insert({ name, exercises })
+    .select("id, name, exercises")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteTemplate(id) {
+  const { error } = await supabase.from("templates").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ---------- workouts ----------
+function volumeOf(exercises) {
+  return exercises.reduce(
+    (sum, e) => sum + e.sets.reduce((s, set) => s + Number(set.weight) * Number(set.reps), 0),
+    0
+  );
+}
+function setCountOf(exercises) {
+  return exercises.reduce((sum, e) => sum + e.sets.length, 0);
+}
+
+function rowToWorkout(r) {
+  return {
+    id: r.id,
+    date: new Date(r.performed_at).getTime(),
+    durationMin: r.duration_min,
+    exercises: r.exercises || [],
+  };
+}
+
+export async function listWorkouts() {
+  const uidval = await requireUserId();
+  const { data, error } = await supabase
+    .from("workouts")
+    .select("id, performed_at, duration_min, exercises")
+    .eq("user_id", uidval)
+    .order("performed_at", { ascending: false });
+  if (error) throw error;
+  return data.map(rowToWorkout);
+}
+
+export async function insertWorkout({ date, durationMin, exercises }) {
+  const { data, error } = await supabase
+    .from("workouts")
+    .insert({
+      performed_at: new Date(date).toISOString(),
+      duration_min: durationMin,
+      exercises,
+      exercise_count: exercises.length,
+      set_count: setCountOf(exercises),
+      total_volume: volumeOf(exercises),
+    })
+    .select("id, performed_at, duration_min, exercises")
+    .single();
+  if (error) throw error;
+  return rowToWorkout(data);
+}
+
+export async function deleteWorkout(id) {
+  const { error } = await supabase.from("workouts").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ---------- admin ----------
+// `checkIsAdmin` reads the caller's own row in `admins` (allowed by RLS).
+// The real enforcement is server-side: the admin_* RPCs below raise
+// "not authorized" for non-admins, and RLS blocks cross-user table reads.
+export async function checkIsAdmin() {
+  let id;
+  try {
+    id = await requireUserId();
+  } catch {
+    return false;
+  }
+  const { data, error } = await supabase
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", id)
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
+}
+
+export async function adminOverview() {
+  const { data, error } = await supabase.rpc("admin_overview");
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
+export async function adminUserStats() {
+  const { data, error } = await supabase.rpc("admin_user_stats");
+  if (error) throw error;
+  return data || [];
+}

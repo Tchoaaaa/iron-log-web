@@ -1,23 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet } from "lucide-react";
-
-// ---------- design tokens ----------
-// Moodboard: boutique pilates studio — blush pink stickers & mats, cream light,
-// matcha green only as the drink-in-hand accent, elegant script logo type.
-const C = {
-  bg: "#FBF1F0",           // soft blush-cream page background
-  surface: "#FFFFFF",
-  surfaceRaised: "#F7E4E2",
-  line: "#F0D9D6",
-  text: "#4A3736",          // warm cocoa-mauve ink, not pure black
-  textDim: "#9A8482",
-  textFaint: "#CDB7B5",
-  amber: "#E8B4B4",         // dusty blush pink — primary action (the mats & stickers)
-  steel: "#9CAE72",         // matcha green — secondary accent (the drink)
-  rust: "#D98C93",          // deeper rose — PR / destructive
-  moss: "#B9CB93",          // light matcha — success/done
-  water: "#9DBEDD",         // soft sky blue — hydration goal
-};
+import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Cloud } from "lucide-react";
+import { C } from "./lib/theme";
+import * as api from "./lib/api";
+import { useAuth } from "./lib/useAuth";
+import AuthScreen from "./screens/AuthScreen";
+import AdminDashboard from "./screens/AdminDashboard";
 
 const DEFAULT_EXERCISES = [
   { name: "Développé couché", category: "Poitrine" },
@@ -42,89 +29,6 @@ const DEFAULT_EXERCISES = [
   { name: "Gainage", category: "Core" },
   { name: "Crunch câble", category: "Core" },
 ];
-
-// Split hebdo de Léa — uniquement les séances de musculation (le jour de run est exclu),
-// intégré comme séances types sans tenir compte des jours de la semaine.
-const LEA_SPLIT_TEMPLATES = [
-  {
-    name: "Jambes (quad)",
-    exercises: [
-      { name: "Pendulum ou Squat", sets: 3, rest: 180 },
-      { name: "Presse ou Hack squat", sets: 3, rest: 180 },
-      { name: "Split squat (statique)", sets: 3, rest: 120 },
-      { name: "Leg extension", sets: 3, rest: 120 },
-      { name: "Extension mollets + Adducteurs", sets: 3, restA: 90, restB: 90, pair: ["Extension mollets", "Adducteurs"] },
-    ],
-  },
-  {
-    name: "Push",
-    exercises: [
-      { name: "Chest press (machine)", sets: 3, rest: 180 },
-      { name: "Shoulder press (machine ou haltères)", sets: 3, rest: 180 },
-      { name: "Incline press (machine ou Smith incliné)", sets: 3, rest: 180 },
-      { name: "Élévations latérales", sets: 3, rest: 120 },
-      { name: "Extension triceps poulie", sets: 3, rest: 120 },
-    ],
-  },
-  {
-    name: "Jambes (glutes)",
-    exercises: [
-      { name: "Hip thrust", sets: 3, rest: 180 },
-      { name: "Romanian deadlift", sets: 3, rest: 180 },
-      { name: "Step-up", sets: 3, rest: 120 },
-      { name: "Kickback câble", sets: 3, rest: 120 },
-      { name: "Abduction", sets: 3, rest: 120 },
-    ],
-  },
-  {
-    name: "Pull",
-    exercises: [
-      { name: "Tirage vertical", sets: 3, rest: 180 },
-      { name: "Rowing T-bar", sets: 3, rest: 180 },
-      { name: "Tirage horizontal", sets: 3, rest: 120 },
-      { name: "Face pull", sets: 3, rest: 120 },
-      { name: "Curl biceps", sets: 3, rest: 120 },
-    ],
-  },
-  {
-    name: "Jambes (mix) + abdos",
-    exercises: [
-      { name: "Pendulum ou Hack squat", sets: 3, rest: 180 },
-      { name: "Bulgarian split squat", sets: 2, rest: 120 },
-      { name: "Leg extension", sets: 3, rest: 120 },
-      { name: "Leg curl", sets: 3, rest: 120 },
-      { name: "Abduction", sets: 3, rest: 120 },
-      { name: "Crunch poulie", sets: 3, rest: 120 },
-      { name: "Relevés de jambes", sets: 3, rest: 120 },
-      { name: "Roulette abdominale", sets: 3, rest: 120 },
-    ],
-  },
-];
-
-const SEED_EXERCISE_CATEGORY = {
-  "Pendulum ou Squat": "Jambes",
-  "Presse ou Hack squat": "Jambes",
-  "Split squat (statique)": "Jambes",
-  "Leg extension": "Jambes",
-  "Adducteurs": "Jambes",
-  "Chest press (machine)": "Poitrine",
-  "Shoulder press (machine ou haltères)": "Épaules",
-  "Incline press (machine ou Smith incliné)": "Poitrine",
-  "Hip thrust": "Fessiers",
-  "Romanian deadlift": "Jambes",
-  "Step-up": "Jambes",
-  "Kickback câble": "Fessiers",
-  "Abduction": "Fessiers",
-  "Rowing T-bar": "Dos",
-  "Face pull": "Épaules",
-  "Curl biceps": "Bras",
-  "Pendulum ou Hack squat": "Jambes",
-  "Bulgarian split squat": "Jambes",
-  "Leg curl": "Jambes",
-  "Crunch poulie": "Core",
-  "Relevés de jambes": "Core",
-  "Roulette abdominale": "Core",
-};
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
@@ -174,32 +78,6 @@ function dailyQuote() {
   return MOTIVATIONAL_QUOTES[dayOfYear % MOTIVATIONAL_QUOTES.length];
 }
 
-// Persistence backed by the browser's localStorage so the app runs as a plain web app.
-// Kept async so the call sites don't need to change.
-async function loadJSON(key, fallback) {
-  try {
-    const value = localStorage.getItem(key);
-    if (value == null) return fallback;
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-}
-async function saveJSON(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.error("storage error", e);
-  }
-}
-function removeJSON(key) {
-  try {
-    localStorage.removeItem(key);
-  } catch (e) {
-    console.error("storage error", e);
-  }
-}
-
 function estOneRM(weight, reps) {
   if (!weight || !reps) return 0;
   return Math.round(weight * (1 + reps / 30));
@@ -215,16 +93,33 @@ function fmtDur(mins) {
   return `${h} h ${m > 0 ? m + " min" : ""}`.trim();
 }
 
-export default function NoopyFit() {
+export default function App() {
+  const { session, loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div style={{ background: C.bg, minHeight: 500 }} className="w-full flex items-center justify-center">
+        <span style={{ color: C.textDim }}>Chargement…</span>
+      </div>
+    );
+  }
+  if (!session) return <AuthScreen />;
+  return <GymApp key={session.user.id} session={session} />;
+}
+
+function GymApp({ session }) {
+  const email = session.user.email;
+
   const [loading, setLoading] = useState(true);
-  const [profiles, setProfiles] = useState([]);
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [dataError, setDataError] = useState("");
   const [exercises, setExercises] = useState(DEFAULT_EXERCISES);
-  const [workouts, setWorkouts] = useState([]); // history for current profile
+  const [workouts, setWorkouts] = useState([]); // this user's history
   const [tab, setTab] = useState("home");
   const [active, setActive] = useState(null); // { startedAt, entries: [{id, name, sets:[{weight,reps,done}]}] }
-  const [showAddProfile, setShowAddProfile] = useState(false);
-  const [newProfileName, setNewProfileName] = useState("");
   const [showPicker, setShowPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
   const [pickerMode, setPickerMode] = useState("workout"); // "workout" | "template"
@@ -240,82 +135,49 @@ export default function NoopyFit() {
   const [prExercise, setPrExercise] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [templateDraft, setTemplateDraft] = useState(null); // { id?, name, exercises: [name,...] }
-  const [avatars, setAvatars] = useState({}); // { profileName: dataUrl }
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showRename, setShowRename] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameError, setRenameError] = useState("");
   const fileInputRef = useRef(null);
 
-  // initial load
+  // initial load — every query is scoped to the signed-in user by RLS
   useEffect(() => {
+    let alive = true;
     (async () => {
-      const [p, ex, av] = await Promise.all([
-        loadJSON("profiles", []),
-        loadJSON("exercises", DEFAULT_EXERCISES),
-        loadJSON("avatars", {}),
-      ]);
-      setProfiles(p);
-      setExercises(ex);
-      setAvatars(av);
-      setLoading(false);
-    })();
-  }, []);
-
-  // load workouts + templates when profile changes
-  useEffect(() => {
-    if (!profile) return;
-    (async () => {
-      const w = await loadJSON(`workouts:${profile}`, []);
-      setWorkouts(w);
-
-      let tpl = await loadJSON(`templates:${profile}`, []);
-
-      // one-time seed of Léa's strength split, requested by name
-      const normalized = profile
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-      if (tpl.length === 0 && ["lea", "namnam"].includes(normalized)) {
-        const seedNames = new Set();
-        LEA_SPLIT_TEMPLATES.forEach((t) =>
-          t.exercises.forEach((e) => (e.pair ? e.pair.forEach((n) => seedNames.add(n)) : seedNames.add(e.name)))
-        );
-        const currentExercises = await loadJSON("exercises", DEFAULT_EXERCISES);
-        const existingLower = new Set(currentExercises.map((e) => e.name.toLowerCase()));
-        const toAdd = [...seedNames]
-          .filter((n) => !existingLower.has(n.toLowerCase()))
-          .map((n) => ({ name: n, category: SEED_EXERCISE_CATEGORY[n] || "Perso" }));
-        if (toAdd.length > 0) {
-          const nextExercises = [...currentExercises, ...toAdd];
-          setExercises(nextExercises);
-          await saveJSON("exercises", nextExercises);
-        } else {
-          setExercises(currentExercises);
-        }
-        tpl = LEA_SPLIT_TEMPLATES.map((t) => ({ id: uid(), name: t.name, exercises: t.exercises }));
-        await saveJSON(`templates:${profile}`, tpl);
+      try {
+        const [prof, ex, wk, tpl, admin] = await Promise.all([
+          api.getProfile(),
+          api.listExercisesOrSeed(DEFAULT_EXERCISES),
+          api.listWorkouts(),
+          api.listTemplates(),
+          api.checkIsAdmin(),
+        ]);
+        if (!alive) return;
+        setProfile((prof && prof.display_name) || (email ? email.split("@")[0] : "Moi"));
+        setAvatarUrl((prof && prof.avatar_url) || null);
+        setExercises(ex && ex.length ? ex : DEFAULT_EXERCISES);
+        setWorkouts(wk || []);
+        setTemplates(tpl || []);
+        setIsAdmin(!!admin);
+      } catch (err) {
+        if (alive) setDataError(err.message || "Erreur de chargement des données.");
+      } finally {
+        if (alive) setLoading(false);
       }
-
-      setTemplates(tpl);
     })();
-  }, [profile]);
+    return () => {
+      alive = false;
+    };
+  }, [email]);
 
-  const addProfile = async () => {
-    const name = newProfileName.trim();
-    if (!name) return;
-    if (profiles.includes(name)) {
-      setProfile(name);
-      setShowAddProfile(false);
-      setNewProfileName("");
-      return;
+  const signOut = async () => {
+    setShowProfileMenu(false);
+    try {
+      await api.signOut();
+    } catch {
+      /* the auth listener still clears the session */
     }
-    const next = [...profiles, name];
-    setProfiles(next);
-    await saveJSON("profiles", next);
-    setProfile(name);
-    setShowAddProfile(false);
-    setNewProfileName("");
   };
 
   const openRename = () => {
@@ -326,39 +188,18 @@ export default function NoopyFit() {
 
   const confirmRename = async () => {
     const newName = renameValue.trim();
-    if (!newName) return;
-    if (newName === profile) {
+    if (!newName || newName === profile) {
       setShowRename(false);
       return;
     }
-    if (profiles.includes(newName)) {
-      setRenameError("Ce nom est déjà pris.");
-      return;
+    try {
+      await api.updateProfile({ display_name: newName });
+      setProfile(newName);
+      setShowRename(false);
+      setShowProfileMenu(false);
+    } catch (err) {
+      setRenameError(err.message || "Impossible d'enregistrer.");
     }
-    const oldName = profile;
-    const nextProfiles = profiles.map((p) => (p === oldName ? newName : p));
-    setProfiles(nextProfiles);
-    await saveJSON("profiles", nextProfiles);
-
-    // move this profile's workout history to the new key
-    await saveJSON(`workouts:${newName}`, workouts);
-    removeJSON(`workouts:${oldName}`);
-
-    // move this profile's templates to the new key
-    await saveJSON(`templates:${newName}`, templates);
-    removeJSON(`templates:${oldName}`);
-
-    // carry the avatar over if one was set
-    if (avatars[oldName]) {
-      const nextAvatars = { ...avatars, [newName]: avatars[oldName] };
-      delete nextAvatars[oldName];
-      setAvatars(nextAvatars);
-      await saveJSON("avatars", nextAvatars);
-    }
-
-    setProfile(newName);
-    setShowRename(false);
-    setShowProfileMenu(false);
   };
 
   const triggerAvatarUpload = () => {
@@ -390,16 +231,13 @@ export default function NoopyFit() {
       reader.readAsDataURL(file);
     }).catch(() => null);
     if (!dataUrl) return;
-    const next = { ...avatars, [profile]: dataUrl };
-    setAvatars(next);
-    await saveJSON("avatars", next);
+    try {
+      await api.updateProfile({ avatar_url: dataUrl });
+      setAvatarUrl(dataUrl);
+    } catch {
+      /* keep the previous avatar on failure */
+    }
     setShowProfileMenu(false);
-  };
-
-  const switchProfile = () => {
-    setShowProfileMenu(false);
-    setProfile(null);
-    setTab("home");
   };
 
   const startWorkout = () => {
@@ -567,9 +405,12 @@ export default function NoopyFit() {
     const trimmed = name.trim();
     if (!trimmed) return;
     if (!exercises.some((e) => e.name.toLowerCase() === trimmed.toLowerCase())) {
-      const next = [...exercises, { name: trimmed, category: "Perso" }];
-      setExercises(next);
-      await saveJSON("exercises", next);
+      setExercises((prev) => [...prev, { name: trimmed, category: "Perso" }]);
+      try {
+        await api.addExercise({ name: trimmed, category: "Perso" });
+      } catch {
+        /* keep the local copy; the library still works this session */
+      }
     }
     chooseExercise(trimmed);
   };
@@ -608,20 +449,27 @@ export default function NoopyFit() {
   const saveTemplateDraft = async () => {
     const name = templateDraft.name.trim();
     if (!name || templateDraft.exercises.length === 0) return;
-    let next;
-    if (templateDraft.id) {
-      next = templates.map((t) => (t.id === templateDraft.id ? { ...t, name, exercises: templateDraft.exercises } : t));
-    } else {
-      next = [...templates, { id: uid(), name, exercises: templateDraft.exercises }];
+    try {
+      const saved = await api.saveTemplate({
+        id: templateDraft.id,
+        name,
+        exercises: templateDraft.exercises,
+      });
+      setTemplates((prev) =>
+        templateDraft.id ? prev.map((t) => (t.id === saved.id ? saved : t)) : [...prev, saved]
+      );
+      setTemplateDraft(null);
+    } catch (err) {
+      setDataError(err.message || "Impossible d'enregistrer la séance.");
     }
-    setTemplates(next);
-    await saveJSON(`templates:${profile}`, next);
-    setTemplateDraft(null);
   };
   const deleteTemplate = async (id) => {
-    const next = templates.filter((t) => t.id !== id);
-    setTemplates(next);
-    await saveJSON(`templates:${profile}`, next);
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    try {
+      await api.deleteTemplate(id);
+    } catch (err) {
+      setDataError(err.message || "Suppression impossible.");
+    }
   };
 
   const updateSet = (entryId, idx, field, value) => {
@@ -679,17 +527,18 @@ export default function NoopyFit() {
       return;
     }
 
-    const session = {
-      id: uid(),
-      date: Date.now(),
-      durationMin,
-      exercises: cleaned,
-    };
-    const next = [session, ...workouts];
-    setWorkouts(next);
-    await saveJSON(`workouts:${profile}`, next);
-    setActive(null);
-    setTab("history");
+    try {
+      const saved = await api.insertWorkout({
+        date: Date.now(),
+        durationMin,
+        exercises: cleaned,
+      });
+      setWorkouts((prev) => [saved, ...prev]);
+      setActive(null);
+      setTab("history");
+    } catch (err) {
+      setDataError(err.message || "Impossible d'enregistrer la séance.");
+    }
   };
 
   const discardWorkout = () => {
@@ -698,9 +547,12 @@ export default function NoopyFit() {
   };
 
   const deleteWorkout = async (id) => {
-    const next = workouts.filter((w) => w.id !== id);
-    setWorkouts(next);
-    await saveJSON(`workouts:${profile}`, next);
+    setWorkouts((prev) => prev.filter((w) => w.id !== id));
+    try {
+      await api.deleteWorkout(id);
+    } catch (err) {
+      setDataError(err.message || "Suppression impossible.");
+    }
   };
 
   // ---------- derived: PR data ----------
@@ -761,83 +613,11 @@ export default function NoopyFit() {
     );
   }
 
-  // ---------- profile picker screen ----------
-  if (!profile) {
-    return (
-      <div style={{ background: C.bg, minHeight: 600 }} className="w-full flex justify-center">
-        <div
-          style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 430 }}
-          className="w-full flex flex-col items-center justify-center p-6"
-        >
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500;1,600&display=swap');
-          .il-input { background: ${C.surfaceRaised}; border: 1px solid ${C.line}; color: ${C.text}; }
-          .il-input::placeholder { color: ${C.textFaint}; }
-          .il-input:focus { outline: none; border-color: ${C.amber}; }
-          .il-logo { font-family: "Playfair Display", Georgia, "Times New Roman", serif; font-style: italic; }
-        `}</style>
-        <div
-          style={{ background: C.surface, border: `1px solid ${C.line}` }}
-          className="w-24 h-24 rounded-full flex items-center justify-center mb-5"
-        >
-          <Dumbbell size={30} style={{ color: C.amber }} />
-        </div>
-        <h1 className="il-logo text-4xl mb-1" style={{ fontWeight: 600, color: C.text }}>Noopy FIT</h1>
-        <p style={{ color: C.textFaint, letterSpacing: "0.15em", fontSize: "10px" }} className="mb-6">EST. 2026</p>
-        <p style={{ color: C.textDim }} className="mb-8 text-sm">Qui s'entraîne aujourd'hui ?</p>
-
-        <div className="w-full max-w-xs flex flex-col gap-2 mb-6">
-          {profiles.map((p) => (
-            <button
-              key={p}
-              onClick={() => setProfile(p)}
-              style={{ background: C.surface, border: `1px solid ${C.line}` }}
-              className="flex items-center justify-between px-4 py-3 rounded-xl"
-            >
-              <span className="flex items-center gap-2">
-                {avatars[p] ? (
-                  <img src={avatars[p]} alt="" className="w-6 h-6 rounded-full object-cover" />
-                ) : (
-                  <User size={16} style={{ color: C.steel }} />
-                )}
-                {p}
-              </span>
-              <ChevronRight size={16} style={{ color: C.textFaint }} />
-            </button>
-          ))}
-        </div>
-
-        {!showAddProfile ? (
-          <button
-            onClick={() => setShowAddProfile(true)}
-            style={{ color: C.amber, border: `1px solid ${C.amber}` }}
-            className="px-4 py-2 rounded-xl text-sm flex items-center gap-1.5"
-          >
-            <Plus size={15} /> Nouveau profil
-          </button>
-        ) : (
-          <div className="w-full max-w-xs flex gap-2">
-            <input
-              autoFocus
-              className="il-input flex-1 px-3 py-2 rounded-xl text-sm"
-              placeholder="Prénom"
-              value={newProfileName}
-              onChange={(e) => setNewProfileName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addProfile()}
-            />
-            <button onClick={addProfile} style={{ background: C.amber, color: C.text }} className="px-3 rounded-xl font-semibold text-sm">
-              OK
-            </button>
-          </div>
-        )}
-        <p style={{ color: C.textFaint }} className="text-xs mt-8 max-w-xs text-center">
-          Les séances sont partagées entre tous les profils de cette app — pratique pour comparer entre potes.
-        </p>
-        </div>
-      </div>
-    );
+  // ---------- admin space (separate screen; the real gate is server-side
+  //            RLS + the admin_* RPCs, which refuse non-admins) ----------
+  if (showAdmin && isAdmin) {
+    return <AdminDashboard email={email} onExit={() => setShowAdmin(false)} />;
   }
-
   return (
     <div style={{ background: C.bg, minHeight: 600 }} className="w-full flex justify-center">
       <div
@@ -858,22 +638,53 @@ export default function NoopyFit() {
       <div className="flex items-center justify-between px-4 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.line}` }}>
         <div className="flex items-center gap-2">
           <Dumbbell size={16} style={{ color: C.amber }} />
-          <span className="il-logo text-lg" style={{ fontWeight: 600 }}>Noopy FIT</span>
+          <span className="il-logo text-lg" style={{ fontWeight: 600 }}>GymApp</span>
         </div>
-        <button onClick={() => setShowProfileMenu(true)} style={{ color: C.textDim }} className="flex items-center gap-1.5 text-sm">
-          {avatars[profile] ? (
-            <img src={avatars[profile]} alt="" className="w-5 h-5 rounded-full object-cover" />
-          ) : (
-            <User size={14} />
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <button
+              onClick={() => setShowAdmin(true)}
+              style={{ color: C.steel }}
+              className="flex items-center gap-1 text-xs"
+              title="Espace administrateur"
+            >
+              <ShieldCheck size={14} /> Admin
+            </button>
           )}
-          {profile}
-        </button>
+          <button onClick={() => setShowProfileMenu(true)} style={{ color: C.textDim }} className="flex items-center gap-1.5 text-sm">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+            ) : (
+              <User size={14} />
+            )}
+            {profile}
+          </button>
+        </div>
       </div>
 
       {/* content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-6">
         {tab === "home" && (
           <div className="flex flex-col gap-4">
+            {dataError && (
+              <div
+                style={{ background: C.surface, border: `1px solid ${C.rust}`, color: C.rust }}
+                className="rounded-2xl p-3 text-xs"
+              >
+                {dataError}
+              </div>
+            )}
+            <div
+              style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.textDim }}
+              className="rounded-2xl p-3 flex items-start gap-2.5 text-xs leading-relaxed"
+            >
+              <Cloud size={15} style={{ color: C.steel, marginTop: 1, flexShrink: 0 }} />
+              <span>
+                Tes séances sont enregistrées <strong>en ligne</strong> et liées à ton compte
+                ({email}). Toi seul(e) y as accès. Les administrateurs autorisés peuvent
+                consulter les données nécessaires au tableau de bord (statistiques d'usage).
+              </span>
+            </div>
             <div
               style={{ background: C.surfaceRaised, border: `1px solid ${C.line}` }}
               className="rounded-2xl p-4 flex items-start gap-3"
@@ -1573,14 +1384,17 @@ export default function NoopyFit() {
             className="w-full max-w-md rounded-t-3xl p-4 flex flex-col gap-1"
           >
             <div className="flex items-center gap-2 px-1 pb-3">
-              {avatars[profile] ? (
-                <img src={avatars[profile]} alt="" className="w-9 h-9 rounded-full object-cover" />
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
               ) : (
                 <div style={{ background: C.surfaceRaised }} className="w-9 h-9 rounded-full flex items-center justify-center">
                   <User size={16} style={{ color: C.steel }} />
                 </div>
               )}
-              <div style={{ fontWeight: 700 }}>{profile}</div>
+              <div>
+                <div style={{ fontWeight: 700 }}>{profile}</div>
+                <div style={{ color: C.textFaint }} className="text-xs">{email}</div>
+              </div>
             </div>
             <button
               onClick={openRename}
@@ -1596,12 +1410,24 @@ export default function NoopyFit() {
             >
               <User size={16} style={{ color: C.textDim }} /> Changer ma photo
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  setShowAdmin(true);
+                }}
+                style={{ background: C.surface }}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm"
+              >
+                <ShieldCheck size={16} style={{ color: C.steel }} /> Espace administrateur
+              </button>
+            )}
             <button
-              onClick={switchProfile}
+              onClick={signOut}
               style={{ background: C.surface }}
               className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm"
             >
-              <ChevronRight size={16} style={{ color: C.textDim }} /> Changer de profil
+              <LogOut size={16} style={{ color: C.textDim }} /> Se déconnecter
             </button>
             <button
               onClick={() => setShowProfileMenu(false)}
