@@ -57,9 +57,12 @@ export default function AdminDashboard({ onExit, email }) {
   }, [overview]);
 
   return (
-    <div style={{ background: C.bg, minHeight: 600 }} className="w-full flex justify-center">
+    <div
+      style={{ background: C.bg, height: "100dvh", minHeight: "100dvh", overflow: "hidden" }}
+      className="w-full flex justify-center"
+    >
       <div
-        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 720 }}
+        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 720, height: "100%" }}
         className="w-full flex flex-col"
       >
         <style>{`
@@ -68,12 +71,12 @@ export default function AdminDashboard({ onExit, email }) {
         `}</style>
 
         <div
-          className="flex items-center justify-between px-4 pt-4 pb-3"
+          className="flex items-center justify-between gap-2 flex-wrap px-4 pt-4 pb-3 flex-shrink-0"
           style={{ borderBottom: `1px solid ${C.line}` }}
         >
           <div className="flex items-center gap-2">
             <ShieldCheck size={18} style={{ color: C.steel }} />
-            <span style={{ fontWeight: 700 }}>Espace administrateur</span>
+            <span style={{ fontWeight: 700 }} className="text-sm">Espace administrateur</span>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -94,7 +97,7 @@ export default function AdminDashboard({ onExit, email }) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-4">
           <div
             style={{ background: C.surfaceRaised, border: `1px solid ${C.line}`, color: C.textDim }}
             className="rounded-2xl p-3 text-xs leading-relaxed"
@@ -150,26 +153,29 @@ export default function AdminDashboard({ onExit, email }) {
                 Utilisateurs & activité
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+                <table
+                  className="w-full text-sm"
+                  style={{ borderCollapse: "collapse", minWidth: 560 }}
+                >
                   <thead>
                     <tr style={{ color: C.textFaint }} className="text-xs text-left">
-                      <th className="px-4 py-2 font-medium">Email</th>
-                      <th className="px-4 py-2 font-medium">Nom</th>
-                      <th className="px-4 py-2 font-medium">Inscrit le</th>
-                      <th className="px-4 py-2 font-medium text-right">Séances</th>
-                      <th className="px-4 py-2 font-medium">Dernière séance</th>
-                      <th className="px-4 py-2 font-medium text-right">Volume (kg)</th>
+                      <th className="px-4 py-2 font-medium whitespace-nowrap">Email</th>
+                      <th className="px-4 py-2 font-medium whitespace-nowrap">Nom</th>
+                      <th className="px-4 py-2 font-medium whitespace-nowrap">Inscrit le</th>
+                      <th className="px-4 py-2 font-medium text-right whitespace-nowrap">Séances</th>
+                      <th className="px-4 py-2 font-medium whitespace-nowrap">Dernière séance</th>
+                      <th className="px-4 py-2 font-medium text-right whitespace-nowrap">Volume (kg)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map((r) => (
                       <tr key={r.user_id} style={{ borderTop: `1px solid ${C.line}` }}>
-                        <td className="px-4 py-2">{r.email}</td>
-                        <td className="px-4 py-2">{r.display_name || "—"}</td>
-                        <td className="px-4 py-2">{fmtDate(r.signed_up_at)}</td>
-                        <td className="px-4 py-2 text-right ad-num">{num(r.workout_count)}</td>
-                        <td className="px-4 py-2">{fmtDate(r.last_workout_at)}</td>
-                        <td className="px-4 py-2 text-right ad-num">
+                        <td className="px-4 py-2 whitespace-nowrap">{r.email}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">{r.display_name || "—"}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">{fmtDate(r.signed_up_at)}</td>
+                        <td className="px-4 py-2 text-right ad-num whitespace-nowrap">{num(r.workout_count)}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">{fmtDate(r.last_workout_at)}</td>
+                        <td className="px-4 py-2 text-right ad-num whitespace-nowrap">
                           {num(r.total_volume).toLocaleString("fr-FR")}
                         </td>
                       </tr>

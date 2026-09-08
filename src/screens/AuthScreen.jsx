@@ -54,9 +54,9 @@ export default function AuthScreen() {
   };
 
   return (
-    <div style={{ background: C.bg, minHeight: 600 }} className="w-full flex justify-center">
+    <div style={{ background: C.bg, minHeight: "100dvh" }} className="w-full flex justify-center">
       <div
-        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 430 }}
+        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 430, minHeight: "100dvh" }}
         className="w-full flex flex-col items-center justify-center p-6"
       >
         <style>{`

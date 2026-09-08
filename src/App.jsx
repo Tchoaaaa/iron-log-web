@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Cloud } from "lucide-react";
+import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck } from "lucide-react";
 import { C } from "./lib/theme";
 import * as api from "./lib/api";
 import { useAuth } from "./lib/useAuth";
@@ -98,7 +98,7 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div style={{ background: C.bg, minHeight: 500 }} className="w-full flex items-center justify-center">
+      <div style={{ background: C.bg, minHeight: "100dvh" }} className="w-full flex items-center justify-center">
         <span style={{ color: C.textDim }}>Chargement…</span>
       </div>
     );
@@ -605,7 +605,7 @@ function GymApp({ session }) {
 
   if (loading) {
     return (
-      <div style={{ background: C.bg, minHeight: 500 }} className="w-full h-full flex justify-center">
+      <div style={{ background: C.bg, minHeight: "100dvh" }} className="w-full flex justify-center">
         <div style={{ color: C.textDim, maxWidth: 430 }} className="w-full flex items-center justify-center">
           Chargement…
         </div>
@@ -619,9 +619,18 @@ function GymApp({ session }) {
     return <AdminDashboard email={email} onExit={() => setShowAdmin(false)} />;
   }
   return (
-    <div style={{ background: C.bg, minHeight: 600 }} className="w-full flex justify-center">
+    <div
+      style={{ background: C.bg, height: "100dvh", minHeight: "100dvh", overflow: "hidden" }}
+      className="w-full flex justify-center"
+    >
       <div
-        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 430, position: "relative" }}
+        style={{
+          color: C.text,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          maxWidth: 430,
+          height: "100%",
+          position: "relative",
+        }}
         className="w-full flex flex-col"
       >
       <style>{`
@@ -635,7 +644,7 @@ function GymApp({ session }) {
       `}</style>
 
       {/* header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.line}` }}>
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0" style={{ borderBottom: `1px solid ${C.line}` }}>
         <div className="flex items-center gap-2">
           <Dumbbell size={16} style={{ color: C.amber }} />
           <span className="il-logo text-lg" style={{ fontWeight: 600 }}>GymApp</span>
@@ -663,7 +672,7 @@ function GymApp({ session }) {
       </div>
 
       {/* content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-6">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-6">
         {tab === "home" && (
           <div className="flex flex-col gap-4">
             {dataError && (
@@ -674,17 +683,6 @@ function GymApp({ session }) {
                 {dataError}
               </div>
             )}
-            <div
-              style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.textDim }}
-              className="rounded-2xl p-3 flex items-start gap-2.5 text-xs leading-relaxed"
-            >
-              <Cloud size={15} style={{ color: C.steel, marginTop: 1, flexShrink: 0 }} />
-              <span>
-                Tes séances sont enregistrées <strong>en ligne</strong> et liées à ton compte
-                ({email}). Toi seul(e) y as accès. Les administrateurs autorisés peuvent
-                consulter les données nécessaires au tableau de bord (statistiques d'usage).
-              </span>
-            </div>
             <div
               style={{ background: C.surfaceRaised, border: `1px solid ${C.line}` }}
               className="rounded-2xl p-4 flex items-start gap-3"
@@ -1222,7 +1220,10 @@ function GymApp({ session }) {
 
       {/* bottom bar: finish/discard when in active workout, else nav */}
       {tab === "workout" && active ? (
-        <div style={{ borderTop: `1px solid ${C.line}`, background: C.bg }} className="p-3">
+        <div
+          style={{ borderTop: `1px solid ${C.line}`, background: C.bg, paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          className="p-3 flex-shrink-0"
+        >
           <button
             onClick={finishWorkout}
             style={{ background: C.amber, color: C.text }}
@@ -1232,7 +1233,10 @@ function GymApp({ session }) {
           </button>
         </div>
       ) : !(tab === "templates" && templateDraft) ? (
-        <div style={{ borderTop: `1px solid ${C.line}` }} className="flex">
+        <div
+          style={{ borderTop: `1px solid ${C.line}`, background: C.bg, paddingBottom: "env(safe-area-inset-bottom)" }}
+          className="flex flex-shrink-0"
+        >
           <NavBtn id="home" icon={Home} label="Accueil" />
           <NavBtn id="templates" icon={ClipboardList} label="Séances" />
           <NavBtn id="history" icon={History} label="Historique" />
