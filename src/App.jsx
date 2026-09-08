@@ -616,7 +616,7 @@ function GymApp({ session }) {
   // ---------- admin space (separate screen; the real gate is server-side
   //            RLS + the admin_* RPCs, which refuse non-admins) ----------
   if (showAdmin && isAdmin) {
-    return <AdminDashboard email={email} onExit={() => setShowAdmin(false)} />;
+    return <AdminDashboard onExit={() => setShowAdmin(false)} />;
   }
   return (
     <div

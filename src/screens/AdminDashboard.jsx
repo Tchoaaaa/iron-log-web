@@ -7,7 +7,7 @@ import { adminOverview, adminUserStats } from "../lib/api";
 // database: admin_overview() / admin_user_stats() raise "not authorized" for
 // non-admins, and Row Level Security blocks any cross-user table read. A
 // non-admin flipping client state still gets nothing back.
-export default function AdminDashboard({ onExit, email }) {
+export default function AdminDashboard({ onExit }) {
   const [overview, setOverview] = useState(null);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,16 +98,6 @@ export default function AdminDashboard({ onExit, email }) {
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-4">
-          <div
-            style={{ background: C.surfaceRaised, border: `1px solid ${C.line}`, color: C.textDim }}
-            className="rounded-2xl p-3 text-xs leading-relaxed"
-          >
-            Connecté en tant qu'<strong>{email}</strong>. Ce tableau de bord n'affiche que les
-            données nécessaires à son fonctionnement : email, nom affiché, date d'inscription et
-            statistiques d'activité agrégées. Il n'expose aucun mot de passe et n'utilise aucune
-            clé secrète — tout passe par des fonctions serveur restreintes aux administrateurs.
-          </div>
-
           {error && (
             <div
               style={{ background: C.surface, border: `1px solid ${C.rust}`, color: C.rust }}

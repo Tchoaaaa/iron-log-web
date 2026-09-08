@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dumbbell, Cloud, Eye, EyeOff } from "lucide-react";
+import { Dumbbell, Eye, EyeOff } from "lucide-react";
 import { C } from "../lib/theme";
 import { signIn, signUp } from "../lib/api";
 
@@ -157,19 +157,6 @@ export default function AuthScreen() {
             : "Pas encore de compte — m'inscrire"}
         </button>
 
-        <div
-          style={{ background: C.surfaceRaised, border: `1px solid ${C.line}`, color: C.textDim }}
-          className="w-full max-w-xs rounded-2xl p-3 mt-8 flex items-start gap-2.5 text-xs leading-relaxed"
-        >
-          <Cloud size={16} style={{ color: C.steel, marginTop: 1, flexShrink: 0 }} />
-          <span>
-            Tes séances sont enregistrées <strong>en ligne</strong> (Supabase), pas seulement sur
-            cet appareil. Chaque compte ne voit que ses propres données. Les administrateurs
-            autorisés peuvent consulter les données nécessaires au fonctionnement du tableau de
-            bord (statistiques d'usage). Les mots de passe ne sont jamais visibles par l'app ni par
-            les administrateurs.
-          </span>
-        </div>
       </div>
     </div>
   );
