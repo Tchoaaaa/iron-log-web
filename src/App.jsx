@@ -1718,12 +1718,8 @@ function GymApp({ session }) {
               </div>
             </div>
 
-            {/* Données */}
-            <div style={{ color: C.textFaint }} className="text-xs font-semibold px-1 pt-1 pb-1 uppercase tracking-wide">
-              Données
-            </div>
             {(metrics.age != null || metrics.weight_kg != null || metrics.height_cm != null) && (
-              <div className="grid grid-cols-3 gap-2 px-1 pb-2">
+              <div className="grid grid-cols-3 gap-2 px-1 pt-1 pb-2">
                 {[
                   { label: "Âge", value: metrics.age != null ? `${metrics.age} ans` : "—" },
                   { label: "Poids", value: metrics.weight_kg != null ? `${metrics.weight_kg} kg` : "—" },
@@ -1741,7 +1737,7 @@ function GymApp({ session }) {
               style={{ background: C.surface }}
               className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm"
             >
-              <Pencil size={16} style={{ color: C.textDim }} /> Nom, âge, poids, taille
+              <Pencil size={16} style={{ color: C.textDim }} /> Données
             </button>
             <button
               onClick={triggerAvatarUpload}
