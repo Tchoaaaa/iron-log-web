@@ -1145,7 +1145,7 @@ function GymApp({ session }) {
               const prCount = prCountByWorkoutId[w.id] || 0;
               const menuOpen = historyMenuId === w.id;
               return (
-                <div key={w.id} className="il-card rounded-2xl overflow-hidden">
+                <div key={w.id} className="il-card rounded-2xl">
                   {/* collapsed card — tap to expand */}
                   <div
                     onClick={() => {
@@ -1220,7 +1220,7 @@ function GymApp({ session }) {
 
                   {/* expanded — best set per exercise */}
                   {open && (
-                    <div className="px-3 pb-3" style={{ borderTop: `1px solid ${C.line}` }}>
+                    <div className="px-3 pb-3 rounded-b-2xl overflow-hidden" style={{ borderTop: `1px solid ${C.line}` }}>
                       <div
                         className="grid gap-3 pt-2 pb-1 text-xs"
                         style={{ gridTemplateColumns: "1fr auto", color: C.textFaint, fontWeight: 600 }}
