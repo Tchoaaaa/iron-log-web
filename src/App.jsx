@@ -866,19 +866,10 @@ function GymApp({ session }) {
           zIndex: 30,
         }}
       >
-        <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            style={{
-              width: 13,
-              height: 13,
-              borderRadius: "50%",
-              border: `2px solid ${C.amber}`,
-              display: "inline-block",
-              flexShrink: 0,
-            }}
-          />
-          <span className="il-brand text-base" style={{ fontWeight: 600 }}>ORE</span>
+        <div className="flex items-center">
+          <span className="il-brand text-base" style={{ fontWeight: 600 }}>
+            <span style={{ color: C.amber }}>Ø</span>RE
+          </span>
         </div>
         <div className="flex items-center gap-3">
           {isAdmin && (

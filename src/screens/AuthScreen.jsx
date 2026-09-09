@@ -89,7 +89,7 @@ export default function AuthScreen() {
           />
         </div>
         <h1 className="au-logo text-4xl mb-2" style={{ fontWeight: 600, color: C.text }}>
-          ORE
+          <span style={{ color: C.amber }}>Ø</span>RE
         </h1>
         <p style={{ color: C.textFaint, letterSpacing: "0.2em", fontSize: "10px" }} className="mb-6">
           TRAIN · TRACK · PROGRESS
