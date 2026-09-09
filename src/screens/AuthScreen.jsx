@@ -56,8 +56,15 @@ export default function AuthScreen() {
   return (
     <div style={{ background: C.bg, minHeight: "100dvh" }} className="w-full flex justify-center">
       <div
-        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 430, minHeight: "100dvh" }}
-        className="w-full flex flex-col items-center justify-center p-6"
+        style={{
+          color: C.text,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          maxWidth: 430,
+          minHeight: "100dvh",
+          paddingTop: "max(1.5rem, env(safe-area-inset-top))",
+          paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
+        }}
+        className="w-full flex flex-col items-center justify-center px-6"
       >
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500;1,600&display=swap');

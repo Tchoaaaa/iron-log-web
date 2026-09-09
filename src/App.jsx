@@ -625,7 +625,10 @@ function GymApp({ session }) {
       `}</style>
 
       {/* header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0" style={{ borderBottom: `1px solid ${C.line}` }}>
+      <div
+        className="flex items-center justify-between px-4 pb-3 flex-shrink-0"
+        style={{ borderBottom: `1px solid ${C.line}`, paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+      >
         <div className="flex items-center gap-2">
           <Dumbbell size={16} style={{ color: C.amber }} />
           <span className="il-logo text-lg" style={{ fontWeight: 600 }}>GymApp</span>
@@ -1215,7 +1218,12 @@ function GymApp({ session }) {
         </div>
       ) : !(tab === "templates" && templateDraft) ? (
         <div
-          style={{ borderTop: `1px solid ${C.line}`, background: C.bg, paddingBottom: "env(safe-area-inset-bottom)" }}
+          style={{
+            borderTop: `1px solid ${C.line}`,
+            background: C.bg,
+            paddingTop: 4,
+            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+          }}
           className="flex flex-shrink-0"
         >
           <NavBtn id="home" icon={Home} label="Accueil" />

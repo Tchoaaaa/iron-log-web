@@ -71,8 +71,8 @@ export default function AdminDashboard({ onExit }) {
         `}</style>
 
         <div
-          className="flex items-center justify-between gap-2 flex-wrap px-4 pt-4 pb-3 flex-shrink-0"
-          style={{ borderBottom: `1px solid ${C.line}` }}
+          className="flex items-center justify-between gap-2 flex-wrap px-4 pb-3 flex-shrink-0"
+          style={{ borderBottom: `1px solid ${C.line}`, paddingTop: "max(1rem, env(safe-area-inset-top))" }}
         >
           <div className="flex items-center gap-2">
             <ShieldCheck size={18} style={{ color: C.steel }} />
@@ -97,7 +97,10 @@ export default function AdminDashboard({ onExit }) {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 flex flex-col gap-4"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
           {error && (
             <div
               style={{ background: C.surface, border: `1px solid ${C.rust}`, color: C.rust }}
