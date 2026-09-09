@@ -48,7 +48,7 @@ export async function signOut() {
 // missing column is retried without the body-metrics fields.
 const MISSING_METRIC_COL = (error) =>
   !!error &&
-  /(age|weight_kg|height_cm)/i.test(error.message || "") &&
+  /(age|weight_kg|height_cm|daily_steps)/i.test(error.message || "") &&
   /(column|schema cache|does not exist|could not find)/i.test(error.message || "");
 
 export async function getProfile() {
@@ -68,7 +68,7 @@ export async function updateProfile(patch) {
   let { error } = await supabase.from("profiles").update(body).eq("id", id);
   if (MISSING_METRIC_COL(error)) {
     // body-metrics columns not migrated yet — save everything else
-    const { age, weight_kg, height_cm, ...rest } = body;
+    const { age, weight_kg, height_cm, daily_steps, ...rest } = body;
     ({ error } = await supabase.from("profiles").update(rest).eq("id", id));
   }
   if (error) throw error;

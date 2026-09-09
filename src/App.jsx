@@ -156,9 +156,9 @@ function GymApp({ session }) {
   const [templates, setTemplates] = useState([]);
   const [templateDraft, setTemplateDraft] = useState(null); // { id?, name, exercises: [name,...] }
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [metrics, setMetrics] = useState({ age: null, weight_kg: null, height_cm: null });
+  const [metrics, setMetrics] = useState({ age: null, weight_kg: null, height_cm: null, daily_steps: null });
   const [showData, setShowData] = useState(false);
-  const [dataForm, setDataForm] = useState({ name: "", age: "", weight: "", height: "" });
+  const [dataForm, setDataForm] = useState({ name: "", age: "", weight: "", height: "", steps: "" });
   const [dataFormError, setDataFormError] = useState("");
   const [dataBusy, setDataBusy] = useState(false);
   const fileInputRef = useRef(null);
@@ -182,6 +182,7 @@ function GymApp({ session }) {
           age: prof && prof.age != null ? prof.age : null,
           weight_kg: prof && prof.weight_kg != null ? Number(prof.weight_kg) : null,
           height_cm: prof && prof.height_cm != null ? Number(prof.height_cm) : null,
+          daily_steps: prof && prof.daily_steps != null ? Number(prof.daily_steps) : null,
         });
         setExercises(ex && ex.length ? ex : DEFAULT_EXERCISES);
         setWorkouts(wk || []);
@@ -222,6 +223,7 @@ function GymApp({ session }) {
       age: metrics.age != null ? String(metrics.age) : "",
       weight: metrics.weight_kg != null ? String(metrics.weight_kg) : "",
       height: metrics.height_cm != null ? String(metrics.height_cm) : "",
+      steps: metrics.daily_steps != null ? String(metrics.daily_steps) : "",
     });
     setDataFormError("");
     setShowData(true);
@@ -243,11 +245,13 @@ function GymApp({ session }) {
     const age = parseNum(dataForm.age);
     const weight = parseNum(dataForm.weight);
     const height = parseNum(dataForm.height);
-    if ([age, weight, height].some((n) => Number.isNaN(n))) {
-      setDataFormError("Âge, poids et taille doivent être des nombres positifs.");
+    const steps = parseNum(dataForm.steps);
+    if ([age, weight, height, steps].some((n) => Number.isNaN(n))) {
+      setDataFormError("Âge, poids, taille et pas doivent être des nombres positifs.");
       return;
     }
     const ageInt = age == null ? null : Math.round(age);
+    const stepsInt = steps == null ? null : Math.round(steps);
     setDataBusy(true);
     try {
       await api.updateProfile({
@@ -255,9 +259,10 @@ function GymApp({ session }) {
         age: ageInt,
         weight_kg: weight,
         height_cm: height,
+        daily_steps: stepsInt,
       });
       setProfile(name);
-      setMetrics({ age: ageInt, weight_kg: weight, height_cm: height });
+      setMetrics({ age: ageInt, weight_kg: weight, height_cm: height, daily_steps: stepsInt });
       setShowData(false);
       setShowProfileMenu(false);
     } catch (err) {
@@ -1718,12 +1723,16 @@ function GymApp({ session }) {
               </div>
             </div>
 
-            {(metrics.age != null || metrics.weight_kg != null || metrics.height_cm != null) && (
-              <div className="grid grid-cols-3 gap-2 px-1 pt-1 pb-2">
+            {(metrics.age != null ||
+              metrics.weight_kg != null ||
+              metrics.height_cm != null ||
+              metrics.daily_steps != null) && (
+              <div className="grid grid-cols-2 gap-2 px-1 pt-1 pb-2">
                 {[
                   { label: "Âge", value: metrics.age != null ? `${metrics.age} ans` : "—" },
                   { label: "Poids", value: metrics.weight_kg != null ? `${metrics.weight_kg} kg` : "—" },
                   { label: "Taille", value: metrics.height_cm != null ? `${metrics.height_cm} cm` : "—" },
+                  { label: "Pas / jour", value: metrics.daily_steps != null ? fmtNum(metrics.daily_steps) : "—" },
                 ].map((m) => (
                   <div key={m.label} style={{ background: C.surface }} className="rounded-xl px-2 py-2 text-center">
                     <div style={{ color: C.textFaint }} className="text-[10px] uppercase tracking-wide">{m.label}</div>
@@ -1841,6 +1850,20 @@ function GymApp({ session }) {
                 />
               </label>
             </div>
+
+            <label className="flex flex-col gap-1">
+              <span style={{ color: C.textFaint }} className="text-xs">Pas moyen par jour</span>
+              <input
+                inputMode="numeric"
+                className="il-input il-num rounded-xl px-3 py-2 text-sm"
+                placeholder="ex. 8000"
+                value={dataForm.steps}
+                onChange={(e) => {
+                  setDataForm((f) => ({ ...f, steps: e.target.value }));
+                  setDataFormError("");
+                }}
+              />
+            </label>
 
             {dataFormError && <div style={{ color: C.rust }} className="text-xs">{dataFormError}</div>}
             <div className="flex gap-2">

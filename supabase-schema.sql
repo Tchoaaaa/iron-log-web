@@ -28,14 +28,16 @@ create table if not exists public.profiles (
   age          integer,
   weight_kg    numeric,
   height_cm    numeric,
+  daily_steps  integer,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
 
 -- optional body metrics, added after the first release
-alter table public.profiles add column if not exists age       integer;
-alter table public.profiles add column if not exists weight_kg numeric;
-alter table public.profiles add column if not exists height_cm numeric;
+alter table public.profiles add column if not exists age         integer;
+alter table public.profiles add column if not exists weight_kg   numeric;
+alter table public.profiles add column if not exists height_cm   numeric;
+alter table public.profiles add column if not exists daily_steps integer;
 
 alter table public.profiles enable row level security;
 
