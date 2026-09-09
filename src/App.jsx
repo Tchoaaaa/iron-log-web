@@ -5,30 +5,11 @@ import * as api from "./lib/api";
 import { useAuth } from "./lib/useAuth";
 import AuthScreen from "./screens/AuthScreen";
 import AdminDashboard from "./screens/AdminDashboard";
+import { EXERCISE_LIBRARY } from "./data/exercises";
 
-const DEFAULT_EXERCISES = [
-  { name: "Développé couché", category: "Poitrine" },
-  { name: "Développé incliné haltères", category: "Poitrine" },
-  { name: "Écarté couché", category: "Poitrine" },
-  { name: "Squat", category: "Jambes" },
-  { name: "Soulevé de terre", category: "Jambes" },
-  { name: "Presse à cuisses", category: "Jambes" },
-  { name: "Fentes haltères", category: "Jambes" },
-  { name: "Extension mollets", category: "Jambes" },
-  { name: "Tractions", category: "Dos" },
-  { name: "Rowing barre", category: "Dos" },
-  { name: "Tirage vertical", category: "Dos" },
-  { name: "Tirage horizontal", category: "Dos" },
-  { name: "Développé militaire", category: "Épaules" },
-  { name: "Élévations latérales", category: "Épaules" },
-  { name: "Oiseau", category: "Épaules" },
-  { name: "Curl biceps barre", category: "Bras" },
-  { name: "Curl marteau", category: "Bras" },
-  { name: "Extension triceps poulie", category: "Bras" },
-  { name: "Dips", category: "Bras" },
-  { name: "Gainage", category: "Core" },
-  { name: "Crunch câble", category: "Core" },
-];
+// Library seeded into a new account (grouped by muscle group). See
+// src/data/exercises.js and supabase-exercises.sql for existing accounts.
+const DEFAULT_EXERCISES = EXERCISE_LIBRARY;
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
