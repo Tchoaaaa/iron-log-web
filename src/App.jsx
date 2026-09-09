@@ -113,23 +113,43 @@ function fmtBestSet(s) {
 
 // Personal note under an exercise during a workout. `onType` keeps it in
 // memory as you type; `onCommit` (on blur) persists it.
+// Personal note under an exercise during a workout. Collapsed by default —
+// a single line you tap to reveal the editor. `onType` keeps it in memory as
+// you type; `onCommit` (on blur) persists it.
 function ExerciseNoteField({ label, value, onType, onCommit }) {
+  const [open, setOpen] = useState(false);
+  const has = !!(value && value.trim());
   return (
     <div className="mt-2">
-      {label && (
-        <div style={{ color: C.textFaint }} className="text-xs mb-1">
-          Note — {label}
-        </div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 text-xs w-full min-w-0"
+        style={{ color: has ? C.text : C.textDim }}
+      >
+        <ChevronRight
+          size={13}
+          style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform .15s", flexShrink: 0 }}
+        />
+        <span style={{ flexShrink: 0 }}>{label ? `Note — ${label}` : "Note"}</span>
+        {!open && (
+          <span className="truncate" style={{ color: C.textFaint }}>
+            {has ? `· ${value}` : "· ajouter"}
+          </span>
+        )}
+      </button>
+      {open && (
+        <textarea
+          autoFocus
+          rows={2}
+          className="il-input rounded-xl px-3 py-2 text-sm w-full mt-1.5"
+          style={{ resize: "none" }}
+          placeholder="Réglages, ressenti du jour, remarque…"
+          value={value}
+          onChange={(e) => onType(e.target.value)}
+          onBlur={(e) => onCommit(e.target.value)}
+        />
       )}
-      <textarea
-        rows={2}
-        className="il-input rounded-xl px-3 py-2 text-sm w-full"
-        style={{ resize: "none" }}
-        placeholder="Note perso : réglages, ressenti du jour, remarque…"
-        value={value}
-        onChange={(e) => onType(e.target.value)}
-        onBlur={(e) => onCommit(e.target.value)}
-      />
     </div>
   );
 }
@@ -230,6 +250,10 @@ function GymApp({ session }) {
 
   // live chrono while a workout is running (not while editing a past one)
   const timing = !!active && !active.editId;
+  // a séance started from a template keeps its exercise list fixed — add /
+  // remove is done outside the séance (in the template, or when editing a
+  // past one). An ad-hoc "Séance vide" stays editable.
+  const lockedExercises = !!active && !active.editId && !!active.fromTemplate;
   useEffect(() => {
     if (!timing) return;
     setNow(Date.now());
@@ -1048,7 +1072,9 @@ function GymApp({ session }) {
                       ) : null}
                     </div>
                   )}
-                  <Trash2 size={14} style={{ color: C.textFaint }} onClick={() => removeEntry(entry.id)} />
+                  {!lockedExercises && (
+                    <Trash2 size={14} style={{ color: C.textFaint }} onClick={() => removeEntry(entry.id)} />
+                  )}
                 </div>
 
                 {entry.kind === "superset" ? (
@@ -1221,13 +1247,15 @@ function GymApp({ session }) {
               </div>
             ))}
 
-            <button
-              onClick={() => openExercisePicker("workout")}
-              style={{ border: `1px dashed ${C.line}`, color: C.textDim }}
-              className="rounded-2xl p-3 text-sm flex items-center justify-center gap-2"
-            >
-              <Plus size={15} /> Ajouter un exercice
-            </button>
+            {!lockedExercises && (
+              <button
+                onClick={() => openExercisePicker("workout")}
+                style={{ border: `1px dashed ${C.line}`, color: C.textDim }}
+                className="rounded-2xl p-3 text-sm flex items-center justify-center gap-2"
+              >
+                <Plus size={15} /> Ajouter un exercice
+              </button>
+            )}
           </div>
         )}
 
