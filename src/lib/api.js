@@ -145,38 +145,50 @@ function setCountOf(exercises) {
 function rowToWorkout(r) {
   return {
     id: r.id,
+    name: r.name ?? null,
     date: new Date(r.performed_at).getTime(),
     durationMin: r.duration_min,
     exercises: r.exercises || [],
   };
 }
 
+const MISSING_NAME_COL = (error) =>
+  !!error &&
+  /name/i.test(error.message || "") &&
+  /(column|schema cache|does not exist)/i.test(error.message || "");
+
 export async function listWorkouts() {
   const uidval = await requireUserId();
+  // select("*") so it works whether or not the `name` column has been migrated
   const { data, error } = await supabase
     .from("workouts")
-    .select("id, performed_at, duration_min, exercises")
+    .select("*")
     .eq("user_id", uidval)
     .order("performed_at", { ascending: false });
   if (error) throw error;
   return data.map(rowToWorkout);
 }
 
-export async function insertWorkout({ date, durationMin, exercises }) {
-  const { data, error } = await supabase
+export async function insertWorkout({ date, durationMin, exercises, name }) {
+  const base = {
+    performed_at: new Date(date).toISOString(),
+    duration_min: durationMin,
+    exercises,
+    exercise_count: exercises.length,
+    set_count: setCountOf(exercises),
+    total_volume: volumeOf(exercises),
+  };
+  let res = await supabase
     .from("workouts")
-    .insert({
-      performed_at: new Date(date).toISOString(),
-      duration_min: durationMin,
-      exercises,
-      exercise_count: exercises.length,
-      set_count: setCountOf(exercises),
-      total_volume: volumeOf(exercises),
-    })
-    .select("id, performed_at, duration_min, exercises")
+    .insert({ ...base, name: name ?? null })
+    .select("*")
     .single();
-  if (error) throw error;
-  return rowToWorkout(data);
+  if (MISSING_NAME_COL(res.error)) {
+    // `name` column not migrated yet — save without it
+    res = await supabase.from("workouts").insert(base).select("*").single();
+  }
+  if (res.error) throw res.error;
+  return rowToWorkout(res.data);
 }
 
 export async function deleteWorkout(id) {

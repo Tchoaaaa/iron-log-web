@@ -96,6 +96,7 @@ create index if not exists templates_user_id_idx on public.templates (user_id);
 create table if not exists public.workouts (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name           text,
   performed_at   timestamptz not null default now(),
   duration_min   integer not null default 0,
   exercises      jsonb   not null default '[]'::jsonb,
@@ -104,6 +105,9 @@ create table if not exists public.workouts (
   total_volume   numeric not null default 0,
   created_at     timestamptz not null default now()
 );
+
+-- for projects created before the `name` column existed
+alter table public.workouts add column if not exists name text;
 
 alter table public.workouts enable row level security;
 create index if not exists workouts_user_id_idx      on public.workouts (user_id);

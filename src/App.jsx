@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck } from "lucide-react";
+import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Clock, MoreHorizontal } from "lucide-react";
 import { C } from "./lib/theme";
 import * as api from "./lib/api";
 import { useAuth } from "./lib/useAuth";
@@ -70,11 +70,36 @@ function fmtDate(ts) {
   const d = new Date(ts);
   return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
+// "mercredi, 9 sept."
+function fmtDayDate(ts) {
+  const s = new Date(ts).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" });
+  return s.replace(/^(\S+)\s/, "$1, ");
+}
 function fmtDur(mins) {
   if (mins < 60) return `${mins} min`;
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return `${h} h ${m > 0 ? m + " min" : ""}`.trim();
+}
+function fmtNum(n) {
+  return Number(n).toLocaleString("fr-FR");
+}
+// Best set of an exercise: heaviest, ties broken by most reps.
+function bestSet(sets) {
+  if (!sets || sets.length === 0) return null;
+  return sets.reduce((best, s) => {
+    const w = Number(s.weight) || 0;
+    const bw = Number(best.weight) || 0;
+    if (w > bw) return s;
+    if (w === bw && (Number(s.reps) || 0) > (Number(best.reps) || 0)) return s;
+    return best;
+  }, sets[0]);
+}
+function fmtBestSet(s) {
+  if (!s) return "—";
+  const w = Number(s.weight) || 0;
+  const r = Number(s.reps) || 0;
+  return w > 0 ? `${fmtNum(w)} kg × ${r}` : `${r} réps`;
 }
 
 export default function App() {
@@ -116,6 +141,7 @@ function GymApp({ session }) {
   const [pendingRestA, setPendingRestA] = useState(null);
   const [supersetStage, setSupersetStage] = useState(null); // null | "a" | "b"
   const [expandedHistory, setExpandedHistory] = useState(null);
+  const [historyMenuId, setHistoryMenuId] = useState(null);
   const [prExercise, setPrExercise] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [templateDraft, setTemplateDraft] = useState(null); // { id?, name, exercises: [name,...] }
@@ -482,12 +508,14 @@ function GymApp({ session }) {
         if (e.kind === "superset") {
           const a = {
             name: e.nameA,
+            superset: e.id,
             sets: e.sets
               .filter((s) => s.weightA !== "" && s.repsA !== "")
               .map((s) => ({ weight: Number(s.weightA), reps: Number(s.repsA) })),
           };
           const b = {
             name: e.nameB,
+            superset: e.id,
             sets: e.sets
               .filter((s) => s.weightB !== "" && s.repsB !== "")
               .map((s) => ({ weight: Number(s.weightB), reps: Number(s.repsB) })),
@@ -516,6 +544,7 @@ function GymApp({ session }) {
         date: Date.now(),
         durationMin,
         exercises: cleaned,
+        name: active.fromTemplate || null,
       });
       setWorkouts((prev) => [saved, ...prev]);
       setActive(null);
@@ -557,6 +586,30 @@ function GymApp({ session }) {
       }
     }
     return map;
+  }, [workouts]);
+
+  // Number of weight PRs each workout set (a PR = heavier top set than any
+  // earlier session, or the first weighted time doing that exercise).
+  const prCountByWorkoutId = useMemo(() => {
+    const byId = {};
+    const bestSoFar = {}; // exercise -> heaviest top set in earlier sessions
+    for (const w of [...workouts].sort((a, b) => a.date - b.date)) {
+      const topThis = {};
+      for (const e of w.exercises) {
+        const mw = e.sets.reduce((m, s) => Math.max(m, Number(s.weight) || 0), 0);
+        topThis[e.name] = Math.max(topThis[e.name] ?? 0, mw);
+      }
+      let count = 0;
+      for (const [name, mw] of Object.entries(topThis)) {
+        const prior = bestSoFar[name];
+        if (prior === undefined ? mw > 0 : mw > prior) count++;
+      }
+      byId[w.id] = count;
+      for (const [name, mw] of Object.entries(topThis)) {
+        bestSoFar[name] = Math.max(bestSoFar[name] ?? 0, mw);
+      }
+    }
+    return byId;
   }, [workouts]);
 
   const prHistory = useMemo(() => {
@@ -1024,41 +1077,106 @@ function GymApp({ session }) {
                 0
               );
               const open = expandedHistory === w.id;
+              const prCount = prCountByWorkoutId[w.id] || 0;
+              const menuOpen = historyMenuId === w.id;
               return (
                 <div key={w.id} className="il-card rounded-2xl overflow-hidden">
-                  <button
-                    onClick={() => setExpandedHistory(open ? null : w.id)}
-                    className="w-full flex items-center justify-between p-3"
+                  {/* collapsed card — tap to expand */}
+                  <div
+                    onClick={() => {
+                      setHistoryMenuId(null);
+                      setExpandedHistory(open ? null : w.id);
+                    }}
+                    className="p-3 cursor-pointer relative"
                   >
-                    <div className="text-left">
-                      <div style={{ fontWeight: 600 }} className="text-sm">{fmtDate(w.date)}</div>
-                      <div style={{ color: C.textFaint }} className="text-xs mt-0.5">
-                        {w.exercises.length} exercice{w.exercises.length > 1 ? "s" : ""} · {fmtDur(w.durationMin)} · <span className="il-num">{totalVolume.toLocaleString("fr-FR")}</span> kg vol.
-                      </div>
-                    </div>
-                    {open ? <ChevronDown size={16} style={{ color: C.textFaint }} /> : <ChevronRight size={16} style={{ color: C.textFaint }} />}
-                  </button>
-                  {open && (
-                    <div className="px-3 pb-3 flex flex-col gap-2" style={{ borderTop: `1px solid ${C.line}` }}>
-                      {w.exercises.map((e, i) => (
-                        <div key={i} className="pt-2">
-                          <div style={{ fontWeight: 600 }} className="text-xs mb-1">{e.name}</div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {e.sets.map((s, si) => (
-                              <span key={si} style={{ background: C.surfaceRaised, color: C.textDim }} className="il-num text-xs px-2 py-0.5 rounded">
-                                {s.weight}kg × {s.reps}
-                              </span>
-                            ))}
-                          </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div style={{ fontWeight: 700 }} className="text-base truncate">
+                          {w.name || "Séance"}
                         </div>
-                      ))}
+                        <div style={{ color: C.textFaint }} className="text-xs mt-0.5">
+                          {fmtDayDate(w.date)}
+                        </div>
+                      </div>
                       <button
-                        onClick={() => deleteWorkout(w.id)}
-                        style={{ color: C.rust }}
-                        className="text-xs flex items-center gap-1 mt-2 self-start"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setHistoryMenuId(menuOpen ? null : w.id);
+                        }}
+                        style={{ color: C.textFaint }}
+                        className="p-1 -mt-1 -mr-1 flex-shrink-0"
+                        aria-label="Options de la séance"
                       >
-                        <Trash2 size={12} /> Supprimer la séance
+                        <MoreHorizontal size={18} />
                       </button>
+                    </div>
+
+                    <div
+                      className="flex items-center gap-4 mt-2 text-xs"
+                      style={{ color: C.textDim }}
+                    >
+                      <span className="flex items-center gap-1">
+                        <Clock size={13} /> {fmtDur(w.durationMin)}
+                      </span>
+                      <span className="il-num flex items-center gap-1">
+                        <Dumbbell size={13} /> {fmtNum(totalVolume)} kg
+                      </span>
+                      <span className="il-num flex items-center gap-1">
+                        <Trophy size={13} /> {prCount} RP
+                      </span>
+                    </div>
+
+                    {menuOpen && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ background: C.surface, border: `1px solid ${C.line}`, boxShadow: "0 8px 24px rgba(74,55,54,0.12)" }}
+                        className="absolute right-2 top-10 rounded-xl py-1 z-20"
+                      >
+                        <button
+                          onClick={() => {
+                            setHistoryMenuId(null);
+                            deleteWorkout(w.id);
+                          }}
+                          style={{ color: C.rust }}
+                          className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap"
+                        >
+                          <Trash2 size={14} /> Supprimer la séance
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* expanded — best set per exercise */}
+                  {open && (
+                    <div className="px-3 pb-3" style={{ borderTop: `1px solid ${C.line}` }}>
+                      <div
+                        className="grid gap-3 pt-2 pb-1 text-xs"
+                        style={{ gridTemplateColumns: "1fr auto", color: C.textFaint, fontWeight: 600 }}
+                      >
+                        <span>Exercice</span>
+                        <span>Meilleure série</span>
+                      </div>
+                      {w.exercises.map((e, i) => {
+                        const inSuper = !!e.superset;
+                        return (
+                          <div
+                            key={i}
+                            className="grid gap-3 items-baseline text-sm py-1"
+                            style={{
+                              gridTemplateColumns: "1fr auto",
+                              borderLeft: `2px solid ${inSuper ? C.rust : "transparent"}`,
+                              paddingLeft: inSuper ? 8 : 0,
+                            }}
+                          >
+                            <span style={{ color: C.textDim }} className="min-w-0 truncate">
+                              <span className="il-num">{e.sets.length}</span> × {e.name}
+                            </span>
+                            <span style={{ color: C.text }} className="il-num whitespace-nowrap">
+                              {fmtBestSet(bestSet(e.sets))}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
