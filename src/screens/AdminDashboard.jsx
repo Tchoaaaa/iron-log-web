@@ -58,11 +58,11 @@ export default function AdminDashboard({ onExit }) {
 
   return (
     <div
-      style={{ background: C.bg, height: "100dvh", minHeight: "100dvh", overflow: "hidden" }}
+      style={{ background: C.bg, minHeight: "100dvh" }}
       className="w-full flex justify-center"
     >
       <div
-        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 720, height: "100%" }}
+        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 720, minHeight: "100dvh" }}
         className="w-full flex flex-col"
       >
         <style>{`
@@ -72,7 +72,14 @@ export default function AdminDashboard({ onExit }) {
 
         <div
           className="flex items-center justify-between gap-2 flex-wrap px-4 pb-3 flex-shrink-0"
-          style={{ borderBottom: `1px solid ${C.line}`, paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+          style={{
+            borderBottom: `1px solid ${C.line}`,
+            paddingTop: "max(1rem, env(safe-area-inset-top))",
+            background: C.bg,
+            position: "sticky",
+            top: 0,
+            zIndex: 30,
+          }}
         >
           <div className="flex items-center gap-2">
             <ShieldCheck size={18} style={{ color: C.steel }} />
@@ -98,7 +105,7 @@ export default function AdminDashboard({ onExit }) {
         </div>
 
         <div
-          className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 flex flex-col gap-4"
+          className="flex-1 px-4 pt-4 flex flex-col gap-4"
           style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
         >
           {error && (

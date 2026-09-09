@@ -617,7 +617,7 @@ function GymApp({ session }) {
   }
   return (
     <div
-      style={{ background: C.bg, height: "100dvh", minHeight: "100dvh", overflow: "hidden" }}
+      style={{ background: C.bg, minHeight: "100dvh" }}
       className="w-full flex justify-center"
     >
       <div
@@ -625,7 +625,7 @@ function GymApp({ session }) {
           color: C.text,
           fontFamily: "system-ui, -apple-system, sans-serif",
           maxWidth: 430,
-          height: "100%",
+          minHeight: "100dvh",
           position: "relative",
         }}
         className="w-full flex flex-col"
@@ -640,10 +640,17 @@ function GymApp({ session }) {
         .il-logo { font-family: "Playfair Display", Georgia, "Times New Roman", serif; font-style: italic; }
       `}</style>
 
-      {/* header */}
+      {/* header — sticky to the top so it stays put on scroll/zoom */}
       <div
         className="flex items-center justify-between px-4 pb-3 flex-shrink-0"
-        style={{ borderBottom: `1px solid ${C.line}`, paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+        style={{
+          borderBottom: `1px solid ${C.line}`,
+          paddingTop: "max(1rem, env(safe-area-inset-top))",
+          background: C.bg,
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
+        }}
       >
         <div className="flex items-center gap-2">
           <Dumbbell size={16} style={{ color: C.amber }} />
@@ -671,8 +678,12 @@ function GymApp({ session }) {
         </div>
       </div>
 
-      {/* content */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-6">
+      {/* content — the page scrolls; the fixed bottom bar sits on top of the
+          reserved bottom padding */}
+      <div
+        className="flex-1 px-4 py-4"
+        style={{ paddingBottom: "calc(84px + env(safe-area-inset-bottom))" }}
+      >
         {tab === "home" && (
           <div className="flex flex-col gap-4">
             {dataError && (
@@ -801,7 +812,7 @@ function GymApp({ session }) {
         )}
 
         {tab === "workout" && active && (
-          <div className="flex flex-col gap-3 pb-16">
+          <div className="flex flex-col gap-3 pb-2">
             <div className="flex items-center justify-between">
               <div>
                 <div style={{ fontWeight: 700 }} className="text-lg">Séance en cours</div>
@@ -1105,7 +1116,7 @@ function GymApp({ session }) {
         )}
 
         {tab === "templates" && templateDraft && (
-          <div className="flex flex-col gap-3 pb-16">
+          <div className="flex flex-col gap-3 pb-2">
             <div className="flex items-center justify-between">
               <div style={{ fontWeight: 700 }} className="text-lg">
                 {templateDraft.id ? "Modifier la séance" : "Nouvelle séance"}
@@ -1256,11 +1267,24 @@ function GymApp({ session }) {
         )}
       </div>
 
-      {/* bottom bar: finish/discard when in active workout, else nav */}
+      {/* bottom bar — fixed to the viewport bottom so it stays put on scroll
+          and zoom. Finish/discard while in an active workout, else the tabs. */}
       {tab === "workout" && active ? (
         <div
-          style={{ borderTop: `1px solid ${C.line}`, background: C.bg, paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-          className="p-3 flex-shrink-0"
+          style={{
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 40,
+            maxWidth: 430,
+            marginLeft: "auto",
+            marginRight: "auto",
+            borderTop: `1px solid ${C.line}`,
+            background: C.bg,
+            paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+          }}
+          className="p-3"
         >
           <button
             onClick={finishWorkout}
@@ -1273,12 +1297,20 @@ function GymApp({ session }) {
       ) : !(tab === "templates" && templateDraft) ? (
         <div
           style={{
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 40,
+            maxWidth: 430,
+            marginLeft: "auto",
+            marginRight: "auto",
             borderTop: `1px solid ${C.line}`,
             background: C.bg,
             paddingTop: 4,
             paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
           }}
-          className="flex flex-shrink-0"
+          className="flex"
         >
           <NavBtn id="home" icon={Home} label="Accueil" />
           <NavBtn id="templates" icon={ClipboardList} label="Séances" />
@@ -1289,7 +1321,7 @@ function GymApp({ session }) {
 
       {/* exercise picker modal */}
       {showPicker && (
-        <div className="absolute inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={closePicker}>
+        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={closePicker}>
           <div
             onClick={(e) => e.stopPropagation()}
             style={{ background: C.bg, borderTop: `1px solid ${C.line}`, maxHeight: "70vh" }}
@@ -1424,7 +1456,7 @@ function GymApp({ session }) {
 
       {/* profile menu */}
       {showProfileMenu && (
-        <div className="absolute inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowProfileMenu(false)}>
+        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowProfileMenu(false)}>
           <div
             onClick={(e) => e.stopPropagation()}
             style={{ background: C.bg, borderTop: `1px solid ${C.line}` }}
@@ -1489,7 +1521,7 @@ function GymApp({ session }) {
 
       {/* rename modal */}
       {showRename && (
-        <div className="absolute inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowRename(false)}>
+        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowRename(false)}>
           <div
             onClick={(e) => e.stopPropagation()}
             style={{ background: C.bg, borderTop: `1px solid ${C.line}` }}
