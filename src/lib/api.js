@@ -191,6 +191,26 @@ export async function insertWorkout({ date, durationMin, exercises, name }) {
   return rowToWorkout(res.data);
 }
 
+export async function updateWorkout(id, { name, exercises }) {
+  const patch = {
+    exercises,
+    exercise_count: exercises.length,
+    set_count: setCountOf(exercises),
+    total_volume: volumeOf(exercises),
+  };
+  let res = await supabase
+    .from("workouts")
+    .update({ ...patch, name: name ?? null })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (MISSING_NAME_COL(res.error)) {
+    res = await supabase.from("workouts").update(patch).eq("id", id).select("*").single();
+  }
+  if (res.error) throw res.error;
+  return rowToWorkout(res.data);
+}
+
 export async function deleteWorkout(id) {
   const { error } = await supabase.from("workouts").delete().eq("id", id);
   if (error) throw error;

@@ -81,6 +81,15 @@ function fmtDur(mins) {
   const m = mins % 60;
   return `${h} h ${m > 0 ? m + " min" : ""}`.trim();
 }
+// live workout chrono: "MM:SS" or "H:MM:SS"
+function fmtTimer(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
 function fmtNum(n) {
   return Number(n).toLocaleString("fr-FR");
 }
@@ -142,6 +151,7 @@ function GymApp({ session }) {
   const [supersetStage, setSupersetStage] = useState(null); // null | "a" | "b"
   const [expandedHistory, setExpandedHistory] = useState(null);
   const [historyMenuId, setHistoryMenuId] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
   const [prExercise, setPrExercise] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [templateDraft, setTemplateDraft] = useState(null); // { id?, name, exercises: [name,...] }
@@ -180,6 +190,15 @@ function GymApp({ session }) {
       alive = false;
     };
   }, [email]);
+
+  // live chrono while a workout is running (not while editing a past one)
+  const timing = !!active && !active.editId;
+  useEffect(() => {
+    if (!timing) return;
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [timing]);
 
   const signOut = async () => {
     setShowProfileMenu(false);
@@ -252,6 +271,30 @@ function GymApp({ session }) {
 
   const startWorkout = () => {
     setActive({ startedAt: Date.now(), entries: [], fromTemplate: null });
+    setTab("workout");
+  };
+
+  // reopen a saved workout in the workout editor (supersets flatten to
+  // single exercises; the original date and duration are kept)
+  const startEditWorkout = (w) => {
+    setHistoryMenuId(null);
+    setExpandedHistory(null);
+    setActive({
+      startedAt: w.date,
+      editId: w.id,
+      originalDurationMin: w.durationMin,
+      fromTemplate: w.name || null,
+      entries: w.exercises.map((e) => ({
+        id: uid(),
+        kind: "single",
+        name: e.name,
+        sets: e.sets.map((s) => ({
+          weight: s.weight === 0 ? "0" : String(s.weight),
+          reps: String(s.reps),
+          done: true,
+        })),
+      })),
+    });
     setTab("workout");
   };
 
@@ -540,6 +583,16 @@ function GymApp({ session }) {
     }
 
     try {
+      if (active.editId) {
+        const saved = await api.updateWorkout(active.editId, {
+          name: active.fromTemplate || null,
+          exercises: cleaned,
+        });
+        setWorkouts((prev) => prev.map((w) => (w.id === active.editId ? saved : w)));
+        setActive(null);
+        setTab("history");
+        return;
+      }
       const saved = await api.insertWorkout({
         date: Date.now(),
         durationMin,
@@ -868,7 +921,19 @@ function GymApp({ session }) {
           <div className="flex flex-col gap-3 pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <div style={{ fontWeight: 700 }} className="text-lg">Séance en cours</div>
+                <div className="flex items-center gap-2">
+                  <div style={{ fontWeight: 700 }} className="text-lg">
+                    {active.editId ? "Modifier la séance" : "Séance en cours"}
+                  </div>
+                  {timing && (
+                    <span
+                      className="il-num flex items-center gap-1 text-sm px-2 py-0.5 rounded-lg"
+                      style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.text }}
+                    >
+                      <Clock size={13} /> {fmtTimer(now - active.startedAt)}
+                    </span>
+                  )}
+                </div>
                 {active.fromTemplate && (
                   <div style={{ color: C.textFaint }} className="text-xs mt-0.5">D'après « {active.fromTemplate} »</div>
                 )}
@@ -1133,12 +1198,19 @@ function GymApp({ session }) {
                         className="absolute right-2 top-10 rounded-xl py-1 z-20"
                       >
                         <button
+                          onClick={() => startEditWorkout(w)}
+                          style={{ color: C.text }}
+                          className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap w-full"
+                        >
+                          <Pencil size={14} /> Modifier la séance
+                        </button>
+                        <button
                           onClick={() => {
                             setHistoryMenuId(null);
                             deleteWorkout(w.id);
                           }}
                           style={{ color: C.rust }}
-                          className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap"
+                          className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap w-full"
                         >
                           <Trash2 size={14} /> Supprimer la séance
                         </button>
@@ -1413,7 +1485,15 @@ function GymApp({ session }) {
             style={{ background: C.amber, color: C.text }}
             className="w-full py-3 rounded-full font-semibold flex items-center justify-center gap-2"
           >
-            <Square size={15} fill={C.text} /> Terminer la séance
+            {active?.editId ? (
+              <>
+                <Check size={15} /> Enregistrer les modifications
+              </>
+            ) : (
+              <>
+                <Square size={15} fill={C.text} /> Terminer la séance
+              </>
+            )}
           </button>
         </div>
       ) : !(tab === "templates" && templateDraft) ? (
