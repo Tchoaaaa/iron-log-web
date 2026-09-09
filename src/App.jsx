@@ -939,7 +939,9 @@ function GymApp({ session }) {
                     >
                       <span className="text-center">SÉRIE</span>
                       <span className="text-center">PRÉCÉDENT</span>
-                      <span className="text-center">🏋️ KG</span>
+                      <span className="flex items-center justify-center gap-1">
+                        <Dumbbell size={11} strokeWidth={2} /> KG
+                      </span>
                       <span className="text-center">RÉPS</span>
                       <span className="text-center">✓</span>
                     </div>
