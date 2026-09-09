@@ -931,7 +931,7 @@ function GymApp({ session }) {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={startWorkout}
-                  style={{ background: C.amber, color: C.text }}
+                  style={{ background: C.amber, color: C.signalInk }}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold"
                 >
                   <Play size={16} fill={C.text} /> Séance vide
@@ -1155,7 +1155,7 @@ function GymApp({ session }) {
                                     justifySelf: "center",
                                   }}
                                 >
-                                  {s[sub.doneKey] && <Check size={14} color={C.text} />}
+                                  {s[sub.doneKey] && <Check size={14} style={{ color: C.signalInk }} />}
                                 </button>
                               </div>
                             );
@@ -1232,7 +1232,7 @@ function GymApp({ session }) {
                               justifySelf: "center",
                             }}
                           >
-                            {s.done && <Check size={14} color={C.text} />}
+                            {s.done && <Check size={14} style={{ color: C.signalInk }} />}
                           </button>
                         </div>
                       );
@@ -1428,7 +1428,7 @@ function GymApp({ session }) {
                   </div>
                   <button
                     onClick={() => startFromTemplate(t)}
-                    style={{ background: C.amber, color: C.text }}
+                    style={{ background: C.amber, color: C.signalInk }}
                     className="w-full py-2 rounded-full font-semibold text-sm flex items-center justify-center gap-1.5"
                   >
                     <Play size={13} fill={C.text} /> Démarrer cette séance
@@ -1612,7 +1612,7 @@ function GymApp({ session }) {
         >
           <button
             onClick={finishWorkout}
-            style={{ background: C.amber, color: C.text }}
+            style={{ background: C.amber, color: C.signalInk }}
             className="w-full py-3 rounded-full font-semibold flex items-center justify-center gap-2"
           >
             {active?.editId ? (
@@ -1958,7 +1958,7 @@ function GymApp({ session }) {
               <button
                 onClick={saveData}
                 disabled={dataBusy}
-                style={{ background: C.amber, color: C.text, opacity: dataBusy ? 0.6 : 1 }}
+                style={{ background: C.amber, color: C.signalInk, opacity: dataBusy ? 0.6 : 1 }}
                 className="flex-1 py-2.5 rounded-full text-sm font-semibold"
               >
                 {dataBusy ? "…" : "Enregistrer"}

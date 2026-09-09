@@ -151,7 +151,7 @@ export default function AuthScreen() {
           <button
             type="submit"
             disabled={busy}
-            style={{ background: C.amber, color: C.text, opacity: busy ? 0.6 : 1 }}
+            style={{ background: C.amber, color: C.signalInk, opacity: busy ? 0.6 : 1 }}
             className="py-3 rounded-full font-semibold text-sm mt-1"
           >
             {busy ? "…" : mode === "signup" ? "Créer mon compte" : "Se connecter"}

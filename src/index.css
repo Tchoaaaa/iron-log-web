@@ -1,6 +1,40 @@
 @import 'tailwindcss';
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
+/* ØRE — direction artistique. Deux modes, palettes exactes.
+   Le mode suit le réglage système (prefers-color-scheme). */
+:root {
+  --c-bg: #efefec;
+  --c-surface: #f7f7f4;
+  --c-surface-raised: #ecece7;
+  --c-line: #d5d5d0;
+  --c-text: #292a29; /* Primary */
+  --c-text-dim: #858681; /* Secondary */
+  --c-text-faint: #a9aaa5; /* Tertiary */
+  --c-signal: #7ccbc6;
+  --c-signal-ink: #292a29; /* encre foncée SUR le signal */
+  --c-steel: #858681;
+  --c-rust: #b4524a;
+  --c-water: #858681;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #414246;
+    --c-surface: #48494d;
+    --c-surface-raised: #3b3c40;
+    --c-line: #595a5e;
+    --c-text: #f0efeb; /* Primary */
+    --c-text-dim: #a6a6a2; /* Secondary */
+    --c-text-faint: #85868a; /* Tertiary */
+    --c-signal: #7ccbc6;
+    --c-signal-ink: #23241f;
+    --c-steel: #a6a6a2;
+    --c-rust: #d98c86;
+    --c-water: #a6a6a2;
+  }
+}
+
 html,
 body,
 #root {
@@ -9,7 +43,8 @@ body,
 }
 
 body {
-  background: #efefec;
+  background: var(--c-bg);
+  color-scheme: light dark;
   font-family: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
