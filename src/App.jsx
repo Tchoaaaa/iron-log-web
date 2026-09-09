@@ -14,6 +14,9 @@ const DEFAULT_EXERCISES = EXERCISE_LIBRARY;
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
 const REST_OPTIONS = [30, 45, 60, 90, 120, 150, 180, 210, 240, 270, 300];
+
+// SÉRIE | PRÉCÉDENT | KG | RÉPS | ✓
+const SET_GRID = "36px minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) 30px";
 function formatRest(seconds) {
   if (!seconds) return "";
   if (seconds < 60) return `${seconds}s`;
@@ -847,68 +850,67 @@ function GymApp({ session }) {
                           ) : null}
                         </div>
                         <div style={{ background: C.surfaceRaised, border: `1px solid ${C.line}` }} className="rounded-xl p-2 flex flex-col gap-1.5">
-                          {lastByExercise[sub.label] && (
-                            <div style={{ color: C.textFaint }} className="text-xs px-1">
-                              Dernière séance : {fmtDate(lastByExercise[sub.label].date)}
-                            </div>
-                          )}
-                          <div style={{ color: C.textFaint, display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }} className="text-xs px-1">
-                            <span>Série</span><span>Reps</span><span>kg</span><span></span>
+                          <div
+                            style={{ color: C.textFaint, display: "grid", gridTemplateColumns: SET_GRID, gap: "6px", fontSize: 10 }}
+                            className="items-center px-0.5"
+                          >
+                            <span className="text-center">SÉRIE</span>
+                            <span className="text-center">PRÉCÉDENT</span>
+                            <span className="text-center">🏋️ KG</span>
+                            <span className="text-center">RÉPS</span>
+                            <span className="text-center">✓</span>
                           </div>
                           {entry.sets.map((s, idx) => {
                             const prev = lastByExercise[sub.label]?.sets?.[idx];
                             return (
-                              <div key={idx} className="flex flex-col gap-0.5">
-                                <div
-                                  style={{ display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }}
-                                  className="items-center"
+                              <div
+                                key={idx}
+                                style={{ display: "grid", gridTemplateColumns: SET_GRID, gap: "6px" }}
+                                className="items-center"
+                              >
+                                <span
+                                  className="il-num text-xs"
+                                  style={{ background: C.surface, color: C.textDim, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}
                                 >
-                                  <span className="il-num text-xs" style={{ color: C.textFaint }}>{idx + 1}</span>
-                                  <input
-                                    type="number"
-                                    inputMode="numeric"
-                                    className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
-                                    style={{ background: C.surface }}
-                                    placeholder={prev && prev.reps != null ? String(prev.reps) : "0"}
-                                    value={s[sub.repsKey]}
-                                    onChange={(e) => updateSet(entry.id, idx, sub.repsKey, e.target.value)}
-                                  />
-                                  <input
-                                    type="number"
-                                    inputMode="decimal"
-                                    className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
-                                    style={{ background: C.surface }}
-                                    placeholder={prev && prev.weight != null ? String(prev.weight) : "0"}
-                                    value={s[sub.weightKey]}
-                                    onChange={(e) => updateSet(entry.id, idx, sub.weightKey, e.target.value)}
-                                  />
-                                  <button
-                                    onClick={() => updateSet(entry.id, idx, sub.doneKey, !s[sub.doneKey])}
-                                    style={{
-                                      background: s[sub.doneKey] ? C.moss : C.surface,
-                                      border: `1px solid ${s[sub.doneKey] ? C.moss : C.line}`,
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: "10px",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    }}
-                                  >
-                                    {s[sub.doneKey] && <Check size={14} color={C.text} />}
-                                  </button>
-                                </div>
-                                {prev && (
-                                  <div
-                                    style={{ color: C.textFaint, display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px", fontSize: 10 }}
-                                    className="il-num px-1"
-                                  >
-                                    <span />
-                                    <span>{prev.reps}</span>
-                                    <span>{prev.weight} kg</span>
-                                    <span />
-                                  </div>
-                                )}
+                                  {idx + 1}
+                                </span>
+                                <span className="il-num text-center" style={{ color: C.textFaint, fontSize: 11 }}>
+                                  {prev ? `${prev.weight}kg x ${prev.reps}` : "—"}
+                                </span>
+                                <input
+                                  type="number"
+                                  inputMode="decimal"
+                                  className="il-input il-num rounded-xl px-1 py-2 text-sm w-full text-center"
+                                  style={{ background: C.surface }}
+                                  placeholder={prev && prev.weight != null ? String(prev.weight) : "0"}
+                                  value={s[sub.weightKey]}
+                                  onChange={(e) => updateSet(entry.id, idx, sub.weightKey, e.target.value)}
+                                />
+                                <input
+                                  type="number"
+                                  inputMode="numeric"
+                                  className="il-input il-num rounded-xl px-1 py-2 text-sm w-full text-center"
+                                  style={{ background: C.surface }}
+                                  placeholder={prev && prev.reps != null ? String(prev.reps) : "0"}
+                                  value={s[sub.repsKey]}
+                                  onChange={(e) => updateSet(entry.id, idx, sub.repsKey, e.target.value)}
+                                />
+                                <button
+                                  onClick={() => updateSet(entry.id, idx, sub.doneKey, !s[sub.doneKey])}
+                                  style={{
+                                    background: s[sub.doneKey] ? C.moss : C.surface,
+                                    border: `1px solid ${s[sub.doneKey] ? C.moss : C.line}`,
+                                    width: 30,
+                                    height: 30,
+                                    borderRadius: "10px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    justifySelf: "center",
+                                  }}
+                                >
+                                  {s[sub.doneKey] && <Check size={14} color={C.text} />}
+                                </button>
                               </div>
                             );
                           })}
@@ -918,66 +920,65 @@ function GymApp({ session }) {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1.5">
-                    {lastByExercise[entry.name] && (
-                      <div style={{ color: C.textFaint }} className="text-xs px-1">
-                        Dernière séance : {fmtDate(lastByExercise[entry.name].date)}
-                      </div>
-                    )}
-                    <div style={{ color: C.textFaint, display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }} className="text-xs px-1">
-                      <span>Série</span><span>Reps</span><span>kg</span><span></span>
+                    <div
+                      style={{ color: C.textFaint, display: "grid", gridTemplateColumns: SET_GRID, gap: "6px", fontSize: 10 }}
+                      className="items-center px-0.5"
+                    >
+                      <span className="text-center">SÉRIE</span>
+                      <span className="text-center">PRÉCÉDENT</span>
+                      <span className="text-center">🏋️ KG</span>
+                      <span className="text-center">RÉPS</span>
+                      <span className="text-center">✓</span>
                     </div>
                     {entry.sets.map((s, idx) => {
                       const prev = lastByExercise[entry.name]?.sets?.[idx];
                       return (
-                        <div key={idx} className="flex flex-col gap-0.5">
-                          <div
-                            style={{ display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }}
-                            className="items-center"
+                        <div
+                          key={idx}
+                          style={{ display: "grid", gridTemplateColumns: SET_GRID, gap: "6px" }}
+                          className="items-center"
+                        >
+                          <span
+                            className="il-num text-xs"
+                            style={{ background: C.surfaceRaised, color: C.textDim, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}
                           >
-                            <span className="il-num text-xs" style={{ color: C.textFaint }}>{idx + 1}</span>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
-                              placeholder={prev && prev.reps != null ? String(prev.reps) : "0"}
-                              value={s.reps}
-                              onChange={(e) => updateSet(entry.id, idx, "reps", e.target.value)}
-                            />
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
-                              placeholder={prev && prev.weight != null ? String(prev.weight) : "0"}
-                              value={s.weight}
-                              onChange={(e) => updateSet(entry.id, idx, "weight", e.target.value)}
-                            />
-                            <button
-                              onClick={() => updateSet(entry.id, idx, "done", !s.done)}
-                              style={{
-                                background: s.done ? C.moss : "transparent",
-                                border: `1px solid ${s.done ? C.moss : C.line}`,
-                                width: 32,
-                                height: 32,
-                                borderRadius: "10px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              {s.done && <Check size={14} color={C.text} />}
-                            </button>
-                          </div>
-                          {prev && (
-                            <div
-                              style={{ color: C.textFaint, display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px", fontSize: 10 }}
-                              className="il-num px-1"
-                            >
-                              <span />
-                              <span>{prev.reps}</span>
-                              <span>{prev.weight} kg</span>
-                              <span />
-                            </div>
-                          )}
+                            {idx + 1}
+                          </span>
+                          <span className="il-num text-center" style={{ color: C.textFaint, fontSize: 11 }}>
+                            {prev ? `${prev.weight}kg x ${prev.reps}` : "—"}
+                          </span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            className="il-input il-num rounded-xl px-1 py-2 text-sm w-full text-center"
+                            placeholder={prev && prev.weight != null ? String(prev.weight) : "0"}
+                            value={s.weight}
+                            onChange={(e) => updateSet(entry.id, idx, "weight", e.target.value)}
+                          />
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            className="il-input il-num rounded-xl px-1 py-2 text-sm w-full text-center"
+                            placeholder={prev && prev.reps != null ? String(prev.reps) : "0"}
+                            value={s.reps}
+                            onChange={(e) => updateSet(entry.id, idx, "reps", e.target.value)}
+                          />
+                          <button
+                            onClick={() => updateSet(entry.id, idx, "done", !s.done)}
+                            style={{
+                              background: s.done ? C.moss : "transparent",
+                              border: `1px solid ${s.done ? C.moss : C.line}`,
+                              width: 30,
+                              height: 30,
+                              borderRadius: "10px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              justifySelf: "center",
+                            }}
+                          >
+                            {s.done && <Check size={14} color={C.text} />}
+                          </button>
                         </div>
                       );
                     })}
