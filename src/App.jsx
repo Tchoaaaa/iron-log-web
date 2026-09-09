@@ -156,9 +156,11 @@ function GymApp({ session }) {
   const [templates, setTemplates] = useState([]);
   const [templateDraft, setTemplateDraft] = useState(null); // { id?, name, exercises: [name,...] }
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showRename, setShowRename] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
-  const [renameError, setRenameError] = useState("");
+  const [metrics, setMetrics] = useState({ age: null, weight_kg: null, height_cm: null });
+  const [showData, setShowData] = useState(false);
+  const [dataForm, setDataForm] = useState({ name: "", age: "", weight: "", height: "" });
+  const [dataFormError, setDataFormError] = useState("");
+  const [dataBusy, setDataBusy] = useState(false);
   const fileInputRef = useRef(null);
 
   // initial load — every query is scoped to the signed-in user by RLS
@@ -176,6 +178,11 @@ function GymApp({ session }) {
         if (!alive) return;
         setProfile((prof && prof.display_name) || (email ? email.split("@")[0] : "Moi"));
         setAvatarUrl((prof && prof.avatar_url) || null);
+        setMetrics({
+          age: prof && prof.age != null ? prof.age : null,
+          weight_kg: prof && prof.weight_kg != null ? Number(prof.weight_kg) : null,
+          height_cm: prof && prof.height_cm != null ? Number(prof.height_cm) : null,
+        });
         setExercises(ex && ex.length ? ex : DEFAULT_EXERCISES);
         setWorkouts(wk || []);
         setTemplates(tpl || []);
@@ -209,25 +216,54 @@ function GymApp({ session }) {
     }
   };
 
-  const openRename = () => {
-    setRenameValue(profile);
-    setRenameError("");
-    setShowRename(true);
+  const openData = () => {
+    setDataForm({
+      name: profile,
+      age: metrics.age != null ? String(metrics.age) : "",
+      weight: metrics.weight_kg != null ? String(metrics.weight_kg) : "",
+      height: metrics.height_cm != null ? String(metrics.height_cm) : "",
+    });
+    setDataFormError("");
+    setShowData(true);
   };
 
-  const confirmRename = async () => {
-    const newName = renameValue.trim();
-    if (!newName || newName === profile) {
-      setShowRename(false);
+  const saveData = async () => {
+    const name = dataForm.name.trim();
+    if (!name) {
+      setDataFormError("Le nom ne peut pas être vide.");
       return;
     }
+    // "" -> null (champ effacé) ; sinon un nombre positif
+    const parseNum = (v) => {
+      const s = String(v).replace(",", ".").trim();
+      if (s === "") return null;
+      const n = Number(s);
+      return Number.isFinite(n) && n >= 0 ? n : NaN;
+    };
+    const age = parseNum(dataForm.age);
+    const weight = parseNum(dataForm.weight);
+    const height = parseNum(dataForm.height);
+    if ([age, weight, height].some((n) => Number.isNaN(n))) {
+      setDataFormError("Âge, poids et taille doivent être des nombres positifs.");
+      return;
+    }
+    const ageInt = age == null ? null : Math.round(age);
+    setDataBusy(true);
     try {
-      await api.updateProfile({ display_name: newName });
-      setProfile(newName);
-      setShowRename(false);
+      await api.updateProfile({
+        display_name: name,
+        age: ageInt,
+        weight_kg: weight,
+        height_cm: height,
+      });
+      setProfile(name);
+      setMetrics({ age: ageInt, weight_kg: weight, height_cm: height });
+      setShowData(false);
       setShowProfileMenu(false);
     } catch (err) {
-      setRenameError(err.message || "Impossible d'enregistrer.");
+      setDataFormError(err.message || "Impossible d'enregistrer.");
+    } finally {
+      setDataBusy(false);
     }
   };
 
@@ -1681,12 +1717,31 @@ function GymApp({ session }) {
                 <div style={{ color: C.textFaint }} className="text-xs">{email}</div>
               </div>
             </div>
+
+            {/* Données */}
+            <div style={{ color: C.textFaint }} className="text-xs font-semibold px-1 pt-1 pb-1 uppercase tracking-wide">
+              Données
+            </div>
+            {(metrics.age != null || metrics.weight_kg != null || metrics.height_cm != null) && (
+              <div className="grid grid-cols-3 gap-2 px-1 pb-2">
+                {[
+                  { label: "Âge", value: metrics.age != null ? `${metrics.age} ans` : "—" },
+                  { label: "Poids", value: metrics.weight_kg != null ? `${metrics.weight_kg} kg` : "—" },
+                  { label: "Taille", value: metrics.height_cm != null ? `${metrics.height_cm} cm` : "—" },
+                ].map((m) => (
+                  <div key={m.label} style={{ background: C.surface }} className="rounded-xl px-2 py-2 text-center">
+                    <div style={{ color: C.textFaint }} className="text-[10px] uppercase tracking-wide">{m.label}</div>
+                    <div className="il-num text-sm" style={{ fontWeight: 700 }}>{m.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
             <button
-              onClick={openRename}
+              onClick={openData}
               style={{ background: C.surface }}
               className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm"
             >
-              <Pencil size={16} style={{ color: C.textDim }} /> Changer mon nom
+              <Pencil size={16} style={{ color: C.textDim }} /> Nom, âge, poids, taille
             </button>
             <button
               onClick={triggerAvatarUpload}
@@ -1725,33 +1780,84 @@ function GymApp({ session }) {
         </div>
       )}
 
-      {/* rename modal */}
-      {showRename && (
-        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowRename(false)}>
+      {/* données modal — nom + mesures corporelles */}
+      {showData && (
+        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setShowData(false)}>
           <div
             onClick={(e) => e.stopPropagation()}
             style={{ background: C.bg, borderTop: `1px solid ${C.line}` }}
             className="w-full max-w-md rounded-t-3xl p-4 flex flex-col gap-3"
           >
-            <div style={{ fontWeight: 700 }}>Changer mon nom</div>
-            <input
-              autoFocus
-              className="il-input rounded-xl px-3 py-2 text-sm"
-              placeholder="Prénom"
-              value={renameValue}
-              onChange={(e) => {
-                setRenameValue(e.target.value);
-                setRenameError("");
-              }}
-              onKeyDown={(e) => e.key === "Enter" && confirmRename()}
-            />
-            {renameError && <div style={{ color: C.rust }} className="text-xs">{renameError}</div>}
+            <div style={{ fontWeight: 700 }}>Mes données</div>
+
+            <label className="flex flex-col gap-1">
+              <span style={{ color: C.textFaint }} className="text-xs">Nom</span>
+              <input
+                autoFocus
+                className="il-input rounded-xl px-3 py-2 text-sm"
+                placeholder="Prénom"
+                value={dataForm.name}
+                onChange={(e) => {
+                  setDataForm((f) => ({ ...f, name: e.target.value }));
+                  setDataFormError("");
+                }}
+              />
+            </label>
+
+            <div className="grid grid-cols-3 gap-2">
+              <label className="flex flex-col gap-1">
+                <span style={{ color: C.textFaint }} className="text-xs">Âge</span>
+                <input
+                  inputMode="numeric"
+                  className="il-input il-num rounded-xl px-3 py-2 text-sm"
+                  placeholder="ans"
+                  value={dataForm.age}
+                  onChange={(e) => {
+                    setDataForm((f) => ({ ...f, age: e.target.value }));
+                    setDataFormError("");
+                  }}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span style={{ color: C.textFaint }} className="text-xs">Poids</span>
+                <input
+                  inputMode="decimal"
+                  className="il-input il-num rounded-xl px-3 py-2 text-sm"
+                  placeholder="kg"
+                  value={dataForm.weight}
+                  onChange={(e) => {
+                    setDataForm((f) => ({ ...f, weight: e.target.value }));
+                    setDataFormError("");
+                  }}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span style={{ color: C.textFaint }} className="text-xs">Taille</span>
+                <input
+                  inputMode="decimal"
+                  className="il-input il-num rounded-xl px-3 py-2 text-sm"
+                  placeholder="cm"
+                  value={dataForm.height}
+                  onChange={(e) => {
+                    setDataForm((f) => ({ ...f, height: e.target.value }));
+                    setDataFormError("");
+                  }}
+                />
+              </label>
+            </div>
+
+            {dataFormError && <div style={{ color: C.rust }} className="text-xs">{dataFormError}</div>}
             <div className="flex gap-2">
-              <button onClick={() => setShowRename(false)} style={{ color: C.textDim, border: `1px solid ${C.line}` }} className="flex-1 py-2.5 rounded-full text-sm">
+              <button onClick={() => setShowData(false)} style={{ color: C.textDim, border: `1px solid ${C.line}` }} className="flex-1 py-2.5 rounded-full text-sm">
                 Annuler
               </button>
-              <button onClick={confirmRename} style={{ background: C.amber, color: C.text }} className="flex-1 py-2.5 rounded-full text-sm font-semibold">
-                Enregistrer
+              <button
+                onClick={saveData}
+                disabled={dataBusy}
+                style={{ background: C.amber, color: C.text, opacity: dataBusy ? 0.6 : 1 }}
+                className="flex-1 py-2.5 rounded-full text-sm font-semibold"
+              >
+                {dataBusy ? "…" : "Enregistrer"}
               </button>
             </div>
           </div>

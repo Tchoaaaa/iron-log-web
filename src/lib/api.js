@@ -42,11 +42,20 @@ export async function signOut() {
 }
 
 // ---------- profile ----------
+// `age` / `weight_kg` / `height_cm` were added after the first release. The
+// helpers below still work if that migration hasn't run yet (see
+// supabase-schema.sql): reads use select("*"), and a write that mentions a
+// missing column is retried without the body-metrics fields.
+const MISSING_METRIC_COL = (error) =>
+  !!error &&
+  /(age|weight_kg|height_cm)/i.test(error.message || "") &&
+  /(column|schema cache|does not exist|could not find)/i.test(error.message || "");
+
 export async function getProfile() {
   const id = await requireUserId();
   const { data, error } = await supabase
     .from("profiles")
-    .select("display_name, avatar_url")
+    .select("*")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
@@ -55,10 +64,13 @@ export async function getProfile() {
 
 export async function updateProfile(patch) {
   const id = await requireUserId();
-  const { error } = await supabase
-    .from("profiles")
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq("id", id);
+  const body = { ...patch, updated_at: new Date().toISOString() };
+  let { error } = await supabase.from("profiles").update(body).eq("id", id);
+  if (MISSING_METRIC_COL(error)) {
+    // body-metrics columns not migrated yet — save everything else
+    const { age, weight_kg, height_cm, ...rest } = body;
+    ({ error } = await supabase.from("profiles").update(rest).eq("id", id));
+  }
   if (error) throw error;
 }
 
