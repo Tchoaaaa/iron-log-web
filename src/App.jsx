@@ -543,6 +543,19 @@ function GymApp({ session }) {
     return Array.from(set).sort();
   }, [workouts]);
 
+  // For each exercise name, the sets logged the last time it was done
+  // (workouts is newest-first). Shown as the greyed reference per set in a
+  // running workout.
+  const lastByExercise = useMemo(() => {
+    const map = {};
+    for (const w of workouts) {
+      for (const e of w.exercises) {
+        if (!map[e.name]) map[e.name] = { date: w.date, sets: e.sets };
+      }
+    }
+    return map;
+  }, [workouts]);
+
   const prHistory = useMemo(() => {
     if (!prExercise) return [];
     const rows = [];
@@ -834,100 +847,140 @@ function GymApp({ session }) {
                           ) : null}
                         </div>
                         <div style={{ background: C.surfaceRaised, border: `1px solid ${C.line}` }} className="rounded-xl p-2 flex flex-col gap-1.5">
+                          {lastByExercise[sub.label] && (
+                            <div style={{ color: C.textFaint }} className="text-xs px-1">
+                              Dernière séance : {fmtDate(lastByExercise[sub.label].date)}
+                            </div>
+                          )}
                           <div style={{ color: C.textFaint, display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }} className="text-xs px-1">
                             <span>Série</span><span>Reps</span><span>kg</span><span></span>
                           </div>
-                          {entry.sets.map((s, idx) => (
-                            <div
-                              key={idx}
-                              style={{ display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }}
-                              className="items-center"
-                            >
-                              <span className="il-num text-xs" style={{ color: C.textFaint }}>{idx + 1}</span>
-                              <input
-                                type="number"
-                                inputMode="numeric"
-                                className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
-                                style={{ background: C.surface }}
-                                placeholder="0"
-                                value={s[sub.repsKey]}
-                                onChange={(e) => updateSet(entry.id, idx, sub.repsKey, e.target.value)}
-                              />
-                              <input
-                                type="number"
-                                inputMode="decimal"
-                                className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
-                                style={{ background: C.surface }}
-                                placeholder="0"
-                                value={s[sub.weightKey]}
-                                onChange={(e) => updateSet(entry.id, idx, sub.weightKey, e.target.value)}
-                              />
-                              <button
-                                onClick={() => updateSet(entry.id, idx, sub.doneKey, !s[sub.doneKey])}
-                                style={{
-                                  background: s[sub.doneKey] ? C.moss : C.surface,
-                                  border: `1px solid ${s[sub.doneKey] ? C.moss : C.line}`,
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: "10px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                              >
-                                {s[sub.doneKey] && <Check size={14} color={C.text} />}
-                              </button>
-                            </div>
-                          ))}
+                          {entry.sets.map((s, idx) => {
+                            const prev = lastByExercise[sub.label]?.sets?.[idx];
+                            return (
+                              <div key={idx} className="flex flex-col gap-0.5">
+                                <div
+                                  style={{ display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }}
+                                  className="items-center"
+                                >
+                                  <span className="il-num text-xs" style={{ color: C.textFaint }}>{idx + 1}</span>
+                                  <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
+                                    style={{ background: C.surface }}
+                                    placeholder={prev && prev.reps != null ? String(prev.reps) : "0"}
+                                    value={s[sub.repsKey]}
+                                    onChange={(e) => updateSet(entry.id, idx, sub.repsKey, e.target.value)}
+                                  />
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
+                                    style={{ background: C.surface }}
+                                    placeholder={prev && prev.weight != null ? String(prev.weight) : "0"}
+                                    value={s[sub.weightKey]}
+                                    onChange={(e) => updateSet(entry.id, idx, sub.weightKey, e.target.value)}
+                                  />
+                                  <button
+                                    onClick={() => updateSet(entry.id, idx, sub.doneKey, !s[sub.doneKey])}
+                                    style={{
+                                      background: s[sub.doneKey] ? C.moss : C.surface,
+                                      border: `1px solid ${s[sub.doneKey] ? C.moss : C.line}`,
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: "10px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    {s[sub.doneKey] && <Check size={14} color={C.text} />}
+                                  </button>
+                                </div>
+                                {prev && (
+                                  <div
+                                    style={{ color: C.textFaint, display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px", fontSize: 10 }}
+                                    className="il-num px-1"
+                                  >
+                                    <span />
+                                    <span>{prev.reps}</span>
+                                    <span>{prev.weight} kg</span>
+                                    <span />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1.5">
+                    {lastByExercise[entry.name] && (
+                      <div style={{ color: C.textFaint }} className="text-xs px-1">
+                        Dernière séance : {fmtDate(lastByExercise[entry.name].date)}
+                      </div>
+                    )}
                     <div style={{ color: C.textFaint, display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }} className="text-xs px-1">
                       <span>Série</span><span>Reps</span><span>kg</span><span></span>
                     </div>
-                    {entry.sets.map((s, idx) => (
-                      <div
-                        key={idx}
-                        style={{ display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }}
-                        className="items-center"
-                      >
-                        <span className="il-num text-xs" style={{ color: C.textFaint }}>{idx + 1}</span>
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
-                          placeholder="0"
-                          value={s.reps}
-                          onChange={(e) => updateSet(entry.id, idx, "reps", e.target.value)}
-                        />
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
-                          placeholder="0"
-                          value={s.weight}
-                          onChange={(e) => updateSet(entry.id, idx, "weight", e.target.value)}
-                        />
-                        <button
-                          onClick={() => updateSet(entry.id, idx, "done", !s.done)}
-                          style={{
-                            background: s.done ? C.moss : "transparent",
-                            border: `1px solid ${s.done ? C.moss : C.line}`,
-                            width: 32,
-                            height: 32,
-                            borderRadius: "10px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {s.done && <Check size={14} color={C.text} />}
-                        </button>
-                      </div>
-                    ))}
+                    {entry.sets.map((s, idx) => {
+                      const prev = lastByExercise[entry.name]?.sets?.[idx];
+                      return (
+                        <div key={idx} className="flex flex-col gap-0.5">
+                          <div
+                            style={{ display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px" }}
+                            className="items-center"
+                          >
+                            <span className="il-num text-xs" style={{ color: C.textFaint }}>{idx + 1}</span>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
+                              placeholder={prev && prev.reps != null ? String(prev.reps) : "0"}
+                              value={s.reps}
+                              onChange={(e) => updateSet(entry.id, idx, "reps", e.target.value)}
+                            />
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              className="il-input il-num rounded-xl px-2 py-2 text-sm w-full"
+                              placeholder={prev && prev.weight != null ? String(prev.weight) : "0"}
+                              value={s.weight}
+                              onChange={(e) => updateSet(entry.id, idx, "weight", e.target.value)}
+                            />
+                            <button
+                              onClick={() => updateSet(entry.id, idx, "done", !s.done)}
+                              style={{
+                                background: s.done ? C.moss : "transparent",
+                                border: `1px solid ${s.done ? C.moss : C.line}`,
+                                width: 32,
+                                height: 32,
+                                borderRadius: "10px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {s.done && <Check size={14} color={C.text} />}
+                            </button>
+                          </div>
+                          {prev && (
+                            <div
+                              style={{ color: C.textFaint, display: "grid", gridTemplateColumns: "44px 1fr 1fr 32px", gap: "8px", fontSize: 10 }}
+                              className="il-num px-1"
+                            >
+                              <span />
+                              <span>{prev.reps}</span>
+                              <span>{prev.weight} kg</span>
+                              <span />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
