@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Clock, MoreHorizontal } from "lucide-react";
+import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Clock, Hourglass, Timer, MoreHorizontal } from "lucide-react";
 import { C } from "./lib/theme";
 import * as api from "./lib/api";
 import { useAuth } from "./lib/useAuth";
@@ -930,7 +930,7 @@ function GymApp({ session }) {
                       className="il-num flex items-center gap-1 text-sm px-2 py-0.5 rounded-lg"
                       style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.text }}
                     >
-                      <Clock size={13} /> {fmtTimer(now - active.startedAt)}
+                      <Hourglass size={13} /> {fmtTimer(now - active.startedAt)}
                     </span>
                   )}
                 </div>
@@ -958,7 +958,9 @@ function GymApp({ session }) {
                     <div style={{ fontWeight: 600 }} className="text-sm">
                       {entry.name}
                       {entry.rest ? (
-                        <span className="il-num text-xs font-normal" style={{ color: C.textFaint }}> · {formatRest(entry.rest)} repos</span>
+                        <span className="il-num text-xs font-normal inline-flex items-center gap-1 align-middle ml-1.5" style={{ color: C.textFaint }}>
+                          <Timer size={11} /> {formatRest(entry.rest)}
+                        </span>
                       ) : null}
                     </div>
                   )}
@@ -975,7 +977,9 @@ function GymApp({ session }) {
                         <div style={{ color: C.steel }} className="text-sm font-semibold mb-1.5">
                           {sub.label}
                           {sub.rest ? (
-                            <span className="il-num text-xs font-normal" style={{ color: C.textFaint }}> · {formatRest(sub.rest)} repos</span>
+                            <span className="il-num text-xs font-normal inline-flex items-center gap-1 align-middle ml-1.5" style={{ color: C.textFaint }}>
+                              <Timer size={11} /> {formatRest(sub.rest)}
+                            </span>
                           ) : null}
                         </div>
                         <div style={{ background: C.surfaceRaised, border: `1px solid ${C.line}` }} className="rounded-xl p-2 flex flex-col gap-1.5">
@@ -1343,9 +1347,9 @@ function GymApp({ session }) {
                         <button
                           onClick={() => cycleDraftExerciseRest(ex.name)}
                           style={{ color: C.steel }}
-                          className="il-num text-xs ml-1.5"
+                          className="il-num text-xs ml-1.5 inline-flex items-center gap-1 align-middle"
                         >
-                          · {formatRest(ex.rest)} repos
+                          <Timer size={11} /> {formatRest(ex.rest)}
                         </button>
                       )}
                     </span>
@@ -1372,11 +1376,11 @@ function GymApp({ session }) {
                   </div>
                   {ex.pair && (
                     <div className="flex flex-wrap gap-x-3 gap-y-1 pl-4">
-                      <button onClick={() => cycleDraftExerciseRest(ex.name, "A")} style={{ color: C.steel }} className="il-num text-xs">
-                        {ex.pair[0]} · {formatRest(ex.restA)} repos
+                      <button onClick={() => cycleDraftExerciseRest(ex.name, "A")} style={{ color: C.steel }} className="il-num text-xs inline-flex items-center gap-1 align-middle">
+                        {ex.pair[0]} · <Timer size={11} /> {formatRest(ex.restA)}
                       </button>
-                      <button onClick={() => cycleDraftExerciseRest(ex.name, "B")} style={{ color: C.steel }} className="il-num text-xs">
-                        {ex.pair[1]} · {formatRest(ex.restB)} repos
+                      <button onClick={() => cycleDraftExerciseRest(ex.name, "B")} style={{ color: C.steel }} className="il-num text-xs inline-flex items-center gap-1 align-middle">
+                        {ex.pair[1]} · <Timer size={11} /> {formatRest(ex.restB)}
                       </button>
                     </div>
                   )}
