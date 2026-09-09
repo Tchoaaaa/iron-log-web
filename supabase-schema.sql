@@ -77,9 +77,13 @@ create table if not exists public.exercises (
   user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
   name       text not null,
   category   text not null default 'Perso',
+  note       text,
   created_at timestamptz not null default now(),
   unique (user_id, name)
 );
+
+-- personal per-exercise note, added after the first release
+alter table public.exercises add column if not exists note text;
 
 alter table public.exercises enable row level security;
 create index if not exists exercises_user_id_idx on public.exercises (user_id);

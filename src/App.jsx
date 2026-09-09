@@ -111,6 +111,29 @@ function fmtBestSet(s) {
   return w > 0 ? `${fmtNum(w)} kg × ${r}` : `${r} réps`;
 }
 
+// Personal note under an exercise during a workout. `onType` keeps it in
+// memory as you type; `onCommit` (on blur) persists it.
+function ExerciseNoteField({ label, value, onType, onCommit }) {
+  return (
+    <div className="mt-2">
+      {label && (
+        <div style={{ color: C.textFaint }} className="text-xs mb-1">
+          Note — {label}
+        </div>
+      )}
+      <textarea
+        rows={2}
+        className="il-input rounded-xl px-3 py-2 text-sm w-full"
+        style={{ resize: "none" }}
+        placeholder="Note perso : réglages, ressenti du jour, remarque…"
+        value={value}
+        onChange={(e) => onType(e.target.value)}
+        onBlur={(e) => onCommit(e.target.value)}
+      />
+    </div>
+  );
+}
+
 export default function App() {
   const { session, loading: authLoading } = useAuth();
 
@@ -135,6 +158,7 @@ function GymApp({ session }) {
   const [showAdmin, setShowAdmin] = useState(false);
   const [dataError, setDataError] = useState("");
   const [exercises, setExercises] = useState(DEFAULT_EXERCISES);
+  const [exerciseNotes, setExerciseNotes] = useState({}); // exercise name -> personal note
   const [workouts, setWorkouts] = useState([]); // this user's history
   const [tab, setTab] = useState("home");
   const [active, setActive] = useState(null); // { startedAt, entries: [{id, name, sets:[{weight,reps,done}]}] }
@@ -185,6 +209,11 @@ function GymApp({ session }) {
           daily_steps: prof && prof.daily_steps != null ? Number(prof.daily_steps) : null,
         });
         setExercises(ex && ex.length ? ex : DEFAULT_EXERCISES);
+        setExerciseNotes(
+          Object.fromEntries(
+            (ex || []).filter((e) => e && e.note).map((e) => [e.name, e.note])
+          )
+        );
         setWorkouts(wk || []);
         setTemplates(tpl || []);
         setIsAdmin(!!admin);
@@ -269,6 +298,20 @@ function GymApp({ session }) {
       setDataFormError(err.message || "Impossible d'enregistrer.");
     } finally {
       setDataBusy(false);
+    }
+  };
+
+  // personal per-exercise note — kept in memory as you type, saved on blur,
+  // and reloaded next time you train that exercise (same séance or non)
+  const setExerciseNote = (name, text) => {
+    setExerciseNotes((prev) => ({ ...prev, [name]: text }));
+  };
+  const persistExerciseNote = async (name, raw) => {
+    const text = (raw ?? "").trim();
+    try {
+      await api.setExerciseNote(name, text || null);
+    } catch {
+      /* still held in memory; will retry on the next blur */
     }
   };
 
@@ -1091,10 +1134,17 @@ function GymApp({ session }) {
                             );
                           })}
                         </div>
+                        <ExerciseNoteField
+                          label={sub.label}
+                          value={exerciseNotes[sub.label] || ""}
+                          onType={(v) => setExerciseNote(sub.label, v)}
+                          onCommit={(v) => persistExerciseNote(sub.label, v)}
+                        />
                       </div>
                     ))}
                   </div>
                 ) : (
+                  <>
                   <div className="flex flex-col gap-1.5">
                     <div
                       style={{ color: C.textFaint, display: "grid", gridTemplateColumns: SET_GRID, gap: "6px", fontSize: 10 }}
@@ -1161,6 +1211,12 @@ function GymApp({ session }) {
                       );
                     })}
                   </div>
+                  <ExerciseNoteField
+                    value={exerciseNotes[entry.name] || ""}
+                    onType={(v) => setExerciseNote(entry.name, v)}
+                    onCommit={(v) => persistExerciseNote(entry.name, v)}
+                  />
+                  </>
                 )}
               </div>
             ))}

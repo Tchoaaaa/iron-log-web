@@ -75,13 +75,28 @@ export async function updateProfile(patch) {
 }
 
 // ---------- exercise library ----------
+// `note` (a personal, per-exercise memo the user keeps for themselves) was
+// added after the first release. `MISSING_NOTE_COL` lets the helpers below
+// degrade gracefully until supabase-schema.sql's migration has run.
+const MISSING_NOTE_COL = (error) =>
+  !!error &&
+  /note/i.test(error.message || "") &&
+  /(column|schema cache|does not exist|could not find)/i.test(error.message || "");
+
 export async function listExercisesOrSeed(defaults) {
   const uidval = await requireUserId();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("exercises")
-    .select("name, category")
+    .select("name, category, note")
     .eq("user_id", uidval)
     .order("name", { ascending: true });
+  if (MISSING_NOTE_COL(error)) {
+    ({ data, error } = await supabase
+      .from("exercises")
+      .select("name, category")
+      .eq("user_id", uidval)
+      .order("name", { ascending: true }));
+  }
   if (error) throw error;
   if (data.length > 0) return data;
 
@@ -104,6 +119,16 @@ export async function addExercise({ name, category }) {
     .insert({ name, category: category || "Perso" });
   // Ignore unique-violation: the exercise already exists for this user.
   if (error && error.code !== "23505") throw error;
+}
+
+// Personal note attached to an exercise (kept across sessions). Upserts on
+// (user_id, name); a null/empty note clears it.
+export async function setExerciseNote(name, note) {
+  const uidval = await requireUserId();
+  const { error } = await supabase
+    .from("exercises")
+    .upsert({ user_id: uidval, name, note: note || null }, { onConflict: "user_id,name" });
+  if (error && !MISSING_NOTE_COL(error)) throw error;
 }
 
 // ---------- templates ----------
