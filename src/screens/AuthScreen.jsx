@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { C } from "../lib/theme";
 import { signIn, signUp } from "../lib/api";
 
@@ -58,7 +58,7 @@ export default function AuthScreen() {
       <div
         style={{
           color: C.text,
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif',
           maxWidth: 430,
           minHeight: "100dvh",
           paddingTop: "max(1.5rem, env(safe-area-inset-top))",
@@ -67,24 +67,32 @@ export default function AuthScreen() {
         className="w-full flex flex-col items-center justify-center px-6"
       >
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500;1,600&display=swap');
           .au-input { background: ${C.surfaceRaised}; border: 1px solid ${C.line}; color: ${C.text}; }
           .au-input::placeholder { color: ${C.textFaint}; }
           .au-input:focus { outline: none; border-color: ${C.amber}; }
-          .au-logo { font-family: "Playfair Display", Georgia, "Times New Roman", serif; font-style: italic; }
+          .au-logo { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.28em; }
         `}</style>
 
         <div
           style={{ background: C.surface, border: `1px solid ${C.line}` }}
           className="w-24 h-24 rounded-full flex items-center justify-center mb-5"
         >
-          <Dumbbell size={30} style={{ color: C.amber }} />
+          <span
+            aria-hidden
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              border: `3px solid ${C.amber}`,
+              display: "inline-block",
+            }}
+          />
         </div>
-        <h1 className="au-logo text-4xl mb-1" style={{ fontWeight: 600, color: C.text }}>
-          GymApp
+        <h1 className="au-logo text-4xl mb-2" style={{ fontWeight: 600, color: C.text }}>
+          ORE
         </h1>
-        <p style={{ color: C.textFaint, letterSpacing: "0.15em", fontSize: "10px" }} className="mb-6">
-          EST. 2026
+        <p style={{ color: C.textFaint, letterSpacing: "0.2em", fontSize: "10px" }} className="mb-6">
+          TRAIN · TRACK · PROGRESS
         </p>
         <p style={{ color: C.textDim }} className="mb-6 text-sm">
           {mode === "signup" ? "Crée ton compte" : "Connecte-toi pour continuer"}

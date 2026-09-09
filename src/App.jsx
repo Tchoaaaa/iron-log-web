@@ -837,7 +837,7 @@ function GymApp({ session }) {
       <div
         style={{
           color: C.text,
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif',
           maxWidth: 430,
           minHeight: "100dvh",
           position: "relative",
@@ -845,13 +845,13 @@ function GymApp({ session }) {
         className="w-full flex flex-col"
       >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500;1,600&display=swap');
         .il-input { background: ${C.surfaceRaised}; border: 1px solid ${C.line}; color: ${C.text}; }
         .il-input::placeholder { color: ${C.textFaint}; }
         .il-input:focus { outline: none; border-color: ${C.amber}; }
-        .il-num { font-variant-numeric: tabular-nums; font-family: "SF Mono", ui-monospace, Menlo, monospace; }
+        .il-num { font-variant-numeric: tabular-nums; font-family: "Space Mono", "SF Mono", ui-monospace, Menlo, monospace; }
         .il-card { background: ${C.surface}; border: 1px solid ${C.line}; }
-        .il-logo { font-family: "Playfair Display", Georgia, "Times New Roman", serif; font-style: italic; }
+        .il-logo { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; }
+        .il-brand { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.24em; }
       `}</style>
 
       {/* header — sticky to the top so it stays put on scroll/zoom */}
@@ -867,8 +867,18 @@ function GymApp({ session }) {
         }}
       >
         <div className="flex items-center gap-2">
-          <Dumbbell size={16} style={{ color: C.amber }} />
-          <span className="il-logo text-lg" style={{ fontWeight: 600 }}>GymApp</span>
+          <span
+            aria-hidden
+            style={{
+              width: 13,
+              height: 13,
+              borderRadius: "50%",
+              border: `2px solid ${C.amber}`,
+              display: "inline-block",
+              flexShrink: 0,
+            }}
+          />
+          <span className="il-brand text-base" style={{ fontWeight: 600 }}>ORE</span>
         </div>
         <div className="flex items-center gap-3">
           {isAdmin && (

@@ -62,12 +62,12 @@ export default function AdminDashboard({ onExit }) {
       className="w-full flex justify-center"
     >
       <div
-        style={{ color: C.text, fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 720, minHeight: "100dvh" }}
+        style={{ color: C.text, fontFamily: '"Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif', maxWidth: 720, minHeight: "100dvh" }}
         className="w-full flex flex-col"
       >
         <style>{`
           .ad-card { background: ${C.surface}; border: 1px solid ${C.line}; }
-          .ad-num { font-variant-numeric: tabular-nums; font-family: "SF Mono", ui-monospace, Menlo, monospace; }
+          .ad-num { font-variant-numeric: tabular-nums; font-family: "Space Mono", "SF Mono", ui-monospace, Menlo, monospace; }
         `}</style>
 
         <div
