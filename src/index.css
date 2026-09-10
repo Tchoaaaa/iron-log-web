@@ -7,15 +7,15 @@
   --c-bg: #efefec;
   --c-surface: #f7f7f4;
   --c-surface-raised: #ecece7;
-  --c-line: #d5d5d0;
-  --c-text: #292a29; /* Primary */
-  --c-text-dim: #858681; /* Secondary */
-  --c-text-faint: #a9aaa5; /* Tertiary */
+  --c-line: #d2d3cf;
+  --c-text: #2a2a29; /* Primary */
+  --c-text-dim: #7f807d; /* Secondary */
+  --c-text-faint: #a4a5a1; /* Tertiary */
   --c-signal: #7ccbc6;
-  --c-signal-ink: #292a29; /* encre foncée SUR le signal */
-  --c-steel: #858681;
+  --c-signal-ink: #2a2a29; /* encre foncée SUR le signal */
+  --c-steel: #7f807d;
   --c-rust: #b4524a;
-  --c-water: #858681;
+  --c-water: #7f807d;
 }
 
 @media (prefers-color-scheme: dark) {

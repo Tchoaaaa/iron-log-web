@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Hourglass, Timer, MoreHorizontal } from "lucide-react";
+import { Plus, X, ChevronRight, Trash2, History, User, Home, Trophy, Search, Play, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Timer, MoreHorizontal } from "lucide-react";
 import { C } from "./lib/theme";
 import * as api from "./lib/api";
 import { useAuth } from "./lib/useAuth";
@@ -15,13 +15,18 @@ const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(
 
 const REST_OPTIONS = [30, 45, 60, 90, 120, 150, 180, 210, 240, 270, 300];
 
-// SÉRIE | PRÉCÉDENT | KG | RÉPS | ✓
-const SET_GRID = "36px minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) 30px";
+// n° | PRÉC. | KG | REPS | ✓
+const SET_GRID = "22px minmax(38px, 0.5fr) minmax(0, 0.92fr) minmax(0, 0.92fr) 30px";
 function formatRest(seconds) {
   if (!seconds) return "";
   if (seconds < 60) return `${seconds}s`;
   if (seconds % 60 === 0) return `${seconds / 60} min`;
   return `${Math.floor(seconds / 60)}min${seconds % 60}`;
+}
+// repos affiché en mm:ss dans l'écran de séance (formatRest reste utilisé ailleurs)
+function fmtRestMMSS(seconds) {
+  const s = Number(seconds) || 0;
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
 const MOTIVATIONAL_QUOTES = [
@@ -125,38 +130,36 @@ function setsOfExercises(exercises) {
 function ExerciseNoteField({ label, value, onType, onCommit }) {
   const [open, setOpen] = useState(false);
   const has = !!(value && value.trim());
+  if (open) {
+    return (
+      <textarea
+        autoFocus
+        rows={2}
+        className="il-input rounded-lg px-2.5 py-2 text-[13px] w-full mt-3.5"
+        style={{ resize: "none" }}
+        placeholder={label ? `Note — ${label}` : "Réglages, ressenti, remarque…"}
+        value={value}
+        onChange={(e) => onType(e.target.value)}
+        onBlur={(e) => {
+          onCommit(e.target.value);
+          setOpen(false);
+        }}
+      />
+    );
+  }
   return (
-    <div className="mt-2">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs w-full min-w-0"
-        style={{ color: has ? C.text : C.textDim }}
-      >
-        <ChevronRight
-          size={13}
-          style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform .15s", flexShrink: 0 }}
-        />
-        <span style={{ flexShrink: 0 }}>{label ? `Note — ${label}` : "Note"}</span>
-        {!open && (
-          <span className="truncate" style={{ color: C.textFaint }}>
-            {has ? `· ${value}` : "· ajouter"}
-          </span>
-        )}
-      </button>
-      {open && (
-        <textarea
-          autoFocus
-          rows={2}
-          className="il-input rounded-xl px-3 py-2 text-sm w-full mt-1.5"
-          style={{ resize: "none" }}
-          placeholder="Réglages, ressenti du jour, remarque…"
-          value={value}
-          onChange={(e) => onType(e.target.value)}
-          onBlur={(e) => onCommit(e.target.value)}
-        />
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      className="text-left w-full min-w-0 mt-3.5 text-[11px]"
+      style={{ color: has ? C.textDim : C.textFaint, letterSpacing: "0.06em" }}
+    >
+      {has ? (
+        <span className="whitespace-pre-wrap break-words">{value}</span>
+      ) : (
+        <span className="uppercase">+ Note</span>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -1117,107 +1120,136 @@ function GymApp({ session }) {
         )}
 
         {tab === "workout" && active && (
-          <div className="flex flex-col gap-3 pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div style={{ fontWeight: 700 }} className="text-lg">
-                    {active.editId ? "Modifier la séance" : "Séance en cours"}
-                  </div>
-                  {timing && (
-                    <span
-                      className="il-num flex items-center gap-1 text-sm px-2 py-0.5 rounded-lg"
-                      style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.text }}
-                    >
-                      <Hourglass size={13} /> {fmtTimer(now - active.startedAt)}
-                    </span>
-                  )}
-                </div>
-                {active.fromTemplate && (
-                  <div style={{ color: C.textFaint }} className="text-xs mt-0.5">D'après « {active.fromTemplate} »</div>
+          <div className="flex flex-col">
+            {/* header de séance */}
+            <div className="pb-3 mb-1" style={{ borderBottom: `1px solid ${C.line}` }}>
+              <div className="flex items-baseline justify-between gap-3">
+                <span
+                  style={{ color: C.textDim, fontWeight: 600, letterSpacing: "0.14em" }}
+                  className="text-[11px] uppercase"
+                >
+                  {active.editId ? "Modifier la séance" : "Séance en cours"}
+                </span>
+                {timing && (
+                  <span className="il-num text-sm" style={{ color: C.textDim, fontWeight: 500 }}>
+                    {fmtTimer(now - active.startedAt)}
+                  </span>
                 )}
               </div>
-              <button onClick={discardWorkout} style={{ color: C.textFaint }} className="text-xs flex items-center gap-1">
-                <X size={13} /> Annuler
-              </button>
+              <div className="flex items-baseline justify-between gap-3 mt-1.5">
+                <span style={{ color: C.textDim }} className="text-xs min-w-0 truncate">
+                  {active.fromTemplate ? `D'après « ${active.fromTemplate} »` : "Séance libre"}
+                </span>
+                <button onClick={discardWorkout} style={{ color: C.textFaint }} className="text-xs flex-shrink-0">
+                  Annuler
+                </button>
+              </div>
             </div>
 
             {active.entries.length === 0 && (
-              <div style={{ color: C.textFaint }} className="text-sm il-card rounded-2xl p-5 text-center">
+              <div style={{ color: C.textFaint }} className="text-sm text-center py-14">
                 Ajoute ton premier exercice pour commencer.
               </div>
             )}
 
-            {active.entries.map((entry) => (
-              <div key={entry.id} className="il-card rounded-2xl p-3">
-                <div className="flex items-center justify-between mb-2">
-                  {entry.kind === "superset" ? (
-                    <span style={{ color: C.rust }} className="text-xs font-bold uppercase tracking-wide">Superset</span>
-                  ) : (
-                    <div style={{ fontWeight: 600 }} className="text-sm">
-                      {entry.name}
-                      {entry.rest ? (
-                        <span className="il-num text-xs font-normal inline-flex items-center gap-1 align-middle ml-1.5" style={{ color: C.textFaint }}>
-                          <Timer size={11} /> {formatRest(entry.rest)}
-                        </span>
-                      ) : null}
+            {active.entries.map((entry, entryIdx) => {
+              const isSuper = entry.kind === "superset";
+              const superNo = isSuper
+                ? active.entries.slice(0, entryIdx + 1).filter((x) => x.kind === "superset").length
+                : 0;
+              const subs = isSuper
+                ? [
+                    { label: entry.nameA, weightKey: "weightA", repsKey: "repsA", doneKey: "doneA", rest: entry.restA },
+                    { label: entry.nameB, weightKey: "weightB", repsKey: "repsB", doneKey: "doneB", rest: entry.restB },
+                  ]
+                : [{ label: entry.name, weightKey: "weight", repsKey: "reps", doneKey: "done", rest: entry.rest }];
+
+              return (
+                <div key={entry.id} className="py-4" style={{ borderBottom: `1px solid ${C.line}` }}>
+                  {isSuper && (
+                    <div className="flex items-center justify-between mb-2">
+                      <span
+                        style={{ color: C.textDim, fontWeight: 600, letterSpacing: "0.14em" }}
+                        className="text-[10px] uppercase"
+                      >
+                        Superset / {String(superNo).padStart(2, "0")}
+                      </span>
+                      {!lockedExercises && (
+                        <button onClick={() => removeEntry(entry.id)} style={{ color: C.textFaint }} aria-label="Retirer l'exercice">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   )}
-                  {!lockedExercises && (
-                    <Trash2 size={14} style={{ color: C.textFaint }} onClick={() => removeEntry(entry.id)} />
-                  )}
-                </div>
 
-                {entry.kind === "superset" ? (
-                  <div className="flex flex-col gap-3">
-                    {[
-                      { label: entry.nameA, weightKey: "weightA", repsKey: "repsA", doneKey: "doneA", rest: entry.restA },
-                      { label: entry.nameB, weightKey: "weightB", repsKey: "repsB", doneKey: "doneB", rest: entry.restB },
-                    ].map((sub, subIdx) => (
+                  <div
+                    className={isSuper ? "flex flex-col gap-5" : undefined}
+                    style={isSuper ? { borderLeft: `1px solid ${C.line}`, paddingLeft: 14, paddingTop: 10, paddingBottom: 2 } : undefined}
+                  >
+                    {subs.map((sub, subIdx) => (
                       <div key={subIdx}>
-                        <div style={{ color: C.steel }} className="text-sm font-semibold mb-1.5">
-                          {sub.label}
-                          {sub.rest ? (
-                            <span className="il-num text-xs font-normal inline-flex items-center gap-1 align-middle ml-1.5" style={{ color: C.textFaint }}>
-                              <Timer size={11} /> {formatRest(sub.rest)}
-                            </span>
-                          ) : null}
-                        </div>
-                        <div style={{ background: C.surfaceRaised, border: `1px solid ${C.line}` }} className="rounded-xl p-2 flex flex-col gap-1.5">
-                          <div
-                            style={{ color: C.textFaint, display: "grid", gridTemplateColumns: SET_GRID, gap: "6px", fontSize: 10 }}
-                            className="items-center px-0.5"
-                          >
-                            <span className="text-center">SÉRIE</span>
-                            <span className="text-center">PRÉCÉDENT</span>
-                            <span className="flex items-center justify-center gap-1">
-                              <Dumbbell size={11} strokeWidth={2} /> KG
-                            </span>
-                            <span className="text-center">RÉPS</span>
-                            <span className="text-center">✓</span>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div
+                              style={{ color: C.text, fontWeight: 700, letterSpacing: "0.04em" }}
+                              className="text-sm uppercase leading-snug"
+                            >
+                              {sub.label}
+                            </div>
+                            <div
+                              className="il-num text-[11px] mt-2 uppercase"
+                              style={{ color: C.textDim, letterSpacing: "0.04em" }}
+                            >
+                              {entry.sets.length} série{entry.sets.length > 1 ? "s" : ""}
+                              {sub.rest ? ` · repos ${fmtRestMMSS(sub.rest)}` : ""}
+                            </div>
                           </div>
+                          {!isSuper && !lockedExercises && (
+                            <button
+                              onClick={() => removeEntry(entry.id)}
+                              style={{ color: C.textFaint }}
+                              className="flex-shrink-0"
+                              aria-label="Retirer l'exercice"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div
+                          className="grid mt-5 mb-2 text-[10px] uppercase"
+                          style={{ gridTemplateColumns: SET_GRID, gap: 6, color: C.textDim, letterSpacing: "0.08em" }}
+                        >
+                          <span />
+                          <span className="text-center">Préc.</span>
+                          <span className="text-center">Kg</span>
+                          <span className="text-center">Reps</span>
+                          <span />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
                           {entry.sets.map((s, idx) => {
                             const prev = lastByExercise[sub.label]?.sets?.[idx];
+                            const done = !!s[sub.doneKey];
                             return (
                               <div
                                 key={idx}
-                                style={{ display: "grid", gridTemplateColumns: SET_GRID, gap: "6px" }}
-                                className="items-center"
+                                className="grid items-center"
+                                style={{ gridTemplateColumns: SET_GRID, gap: 6 }}
                               >
                                 <span
-                                  className="il-num text-xs"
-                                  style={{ background: C.surface, color: C.textDim, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}
+                                  className="il-num text-xs text-center"
+                                  style={{ color: done ? C.textFaint : C.textDim, fontWeight: 600 }}
                                 >
-                                  {idx + 1}
+                                  {String(idx + 1).padStart(2, "0")}
                                 </span>
-                                <span className="il-num text-center" style={{ color: C.textFaint, fontSize: 11 }}>
-                                  {prev ? `${prev.weight}kg x ${prev.reps}` : "—"}
+                                <span className="il-num text-[11px] text-center" style={{ color: C.textDim }}>
+                                  {prev ? `${prev.weight}×${prev.reps}` : "—"}
                                 </span>
                                 <input
                                   type="number"
                                   inputMode="decimal"
-                                  className="il-input il-num rounded-xl px-1 py-2 text-sm w-full text-center"
-                                  style={{ background: C.surface }}
+                                  className="il-input il-num rounded-lg py-2 text-[15px] w-full text-center"
                                   placeholder={prev && prev.weight != null ? String(prev.weight) : "0"}
                                   value={s[sub.weightKey]}
                                   onChange={(e) => updateSet(entry.id, idx, sub.weightKey, e.target.value)}
@@ -1225,34 +1257,35 @@ function GymApp({ session }) {
                                 <input
                                   type="number"
                                   inputMode="numeric"
-                                  className="il-input il-num rounded-xl px-1 py-2 text-sm w-full text-center"
-                                  style={{ background: C.surface }}
+                                  className="il-input il-num rounded-lg py-2 text-[15px] w-full text-center"
                                   placeholder={prev && prev.reps != null ? String(prev.reps) : "0"}
                                   value={s[sub.repsKey]}
                                   onChange={(e) => updateSet(entry.id, idx, sub.repsKey, e.target.value)}
                                 />
                                 <button
-                                  onClick={() => updateSet(entry.id, idx, sub.doneKey, !s[sub.doneKey])}
-                                  style={{
-                                    background: s[sub.doneKey] ? C.moss : C.surface,
-                                    border: `1px solid ${s[sub.doneKey] ? C.moss : C.line}`,
-                                    width: 30,
-                                    height: 30,
-                                    borderRadius: "10px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    justifySelf: "center",
-                                  }}
+                                  onClick={() => updateSet(entry.id, idx, sub.doneKey, !done)}
+                                  className="flex items-center justify-center"
+                                  style={{ height: 34, justifySelf: "center" }}
+                                  aria-label={done ? "Série validée" : "Valider la série"}
                                 >
-                                  {s[sub.doneKey] && <Check size={14} style={{ color: C.signalInk }} />}
+                                  <span
+                                    style={{
+                                      width: 20,
+                                      height: 20,
+                                      borderRadius: 999,
+                                      background: done ? C.amber : "transparent",
+                                      border: done ? "none" : `1.5px solid ${C.line}`,
+                                      display: "block",
+                                    }}
+                                  />
                                 </button>
                               </div>
                             );
                           })}
                         </div>
+
                         <ExerciseNoteField
-                          label={sub.label}
+                          label={isSuper ? sub.label : undefined}
                           value={exerciseNotes[sub.label] || ""}
                           onType={(v) => setExerciseNote(sub.label, v)}
                           onCommit={(v) => persistExerciseNote(sub.label, v)}
@@ -1260,89 +1293,15 @@ function GymApp({ session }) {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <>
-                  <div className="flex flex-col gap-1.5">
-                    <div
-                      style={{ color: C.textFaint, display: "grid", gridTemplateColumns: SET_GRID, gap: "6px", fontSize: 10 }}
-                      className="items-center px-0.5"
-                    >
-                      <span className="text-center">SÉRIE</span>
-                      <span className="text-center">PRÉCÉDENT</span>
-                      <span className="flex items-center justify-center gap-1">
-                        <Dumbbell size={11} strokeWidth={2} /> KG
-                      </span>
-                      <span className="text-center">RÉPS</span>
-                      <span className="text-center">✓</span>
-                    </div>
-                    {entry.sets.map((s, idx) => {
-                      const prev = lastByExercise[entry.name]?.sets?.[idx];
-                      return (
-                        <div
-                          key={idx}
-                          style={{ display: "grid", gridTemplateColumns: SET_GRID, gap: "6px" }}
-                          className="items-center"
-                        >
-                          <span
-                            className="il-num text-xs"
-                            style={{ background: C.surfaceRaised, color: C.textDim, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}
-                          >
-                            {idx + 1}
-                          </span>
-                          <span className="il-num text-center" style={{ color: C.textFaint, fontSize: 11 }}>
-                            {prev ? `${prev.weight}kg x ${prev.reps}` : "—"}
-                          </span>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            className="il-input il-num rounded-xl px-1 py-2 text-sm w-full text-center"
-                            placeholder={prev && prev.weight != null ? String(prev.weight) : "0"}
-                            value={s.weight}
-                            onChange={(e) => updateSet(entry.id, idx, "weight", e.target.value)}
-                          />
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            className="il-input il-num rounded-xl px-1 py-2 text-sm w-full text-center"
-                            placeholder={prev && prev.reps != null ? String(prev.reps) : "0"}
-                            value={s.reps}
-                            onChange={(e) => updateSet(entry.id, idx, "reps", e.target.value)}
-                          />
-                          <button
-                            onClick={() => updateSet(entry.id, idx, "done", !s.done)}
-                            style={{
-                              background: s.done ? C.moss : "transparent",
-                              border: `1px solid ${s.done ? C.moss : C.line}`,
-                              width: 30,
-                              height: 30,
-                              borderRadius: "10px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              justifySelf: "center",
-                            }}
-                          >
-                            {s.done && <Check size={14} style={{ color: C.signalInk }} />}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <ExerciseNoteField
-                    value={exerciseNotes[entry.name] || ""}
-                    onType={(v) => setExerciseNote(entry.name, v)}
-                    onCommit={(v) => persistExerciseNote(entry.name, v)}
-                  />
-                  </>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
 
             {!lockedExercises && (
               <button
                 onClick={() => openExercisePicker("workout")}
-                style={{ border: `1px dashed ${C.line}`, color: C.textDim }}
-                className="rounded-2xl p-3 text-sm flex items-center justify-center gap-2"
+                style={{ color: C.textDim }}
+                className="text-sm py-5 flex items-center justify-center gap-2"
               >
                 <Plus size={15} /> Ajouter un exercice
               </button>
@@ -1758,18 +1717,10 @@ function GymApp({ session }) {
         >
           <button
             onClick={finishWorkout}
-            style={{ background: C.amber, color: C.signalInk }}
-            className="w-full py-3 rounded-full font-semibold flex items-center justify-center gap-2"
+            style={{ background: C.amber, color: C.signalInk, letterSpacing: "0.06em" }}
+            className="w-full py-3.5 rounded-full font-semibold text-sm uppercase"
           >
-            {active?.editId ? (
-              <>
-                <Check size={15} /> Enregistrer les modifications
-              </>
-            ) : (
-              <>
-                <Square size={15} fill={C.text} /> Terminer la séance
-              </>
-            )}
+            {active?.editId ? "Enregistrer les modifications" : "Terminer la séance"}
           </button>
         </div>
       ) : !(tab === "templates" && templateDraft) ? (
