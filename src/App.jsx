@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Clock, Hourglass, Timer, MoreHorizontal } from "lucide-react";
+import { Plus, Check, X, ChevronRight, ChevronDown, Trash2, Dumbbell, History, User, Home, Trophy, Search, Play, Square, ClipboardList, Pencil, Sparkles, Footprints, Droplet, LogOut, ShieldCheck, Hourglass, Timer, MoreHorizontal } from "lucide-react";
 import { C } from "./lib/theme";
 import * as api from "./lib/api";
 import { useAuth } from "./lib/useAuth";
@@ -92,6 +92,14 @@ function fmtTimer(ms) {
 }
 function fmtNum(n) {
   return Number(n).toLocaleString("fr-FR");
+}
+// tonnage d'affichage : le volume enregistré est en kg (Σ poids×reps).
+// < 1 tonne -> kg ; sinon -> tonnes, pour éviter les nombres à rallonge.
+function fmtVolume(kg) {
+  const n = Number(kg) || 0;
+  if (n < 1000) return `${Math.round(n)} kg`;
+  const t = n / 1000;
+  return `${t < 100 ? t.toFixed(2) : Math.round(t)} T`;
 }
 // session aggregates over a list of { sets: [{weight, reps}] }
 function volumeOfExercises(exercises) {
@@ -811,6 +819,28 @@ function GymApp({ session }) {
     return byId;
   }, [workouts]);
 
+  // séances groupées par mois (workouts est déjà trié du + récent au + ancien)
+  const historyMonths = useMemo(() => {
+    const groups = [];
+    let cur = null;
+    for (const w of workouts) {
+      const d = new Date(w.date);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!cur || cur.key !== key) {
+        cur = {
+          key,
+          label: d
+            .toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+            .toUpperCase(),
+          items: [],
+        };
+        groups.push(cur);
+      }
+      cur.items.push(w);
+    }
+    return groups;
+  }, [workouts]);
+
   const prHistory = useMemo(() => {
     if (!prExercise) return [];
     const rows = [];
@@ -913,20 +943,42 @@ function GymApp({ session }) {
           {isAdmin && (
             <button
               onClick={() => setShowAdmin(true)}
-              style={{ color: C.steel }}
+              style={{ color: C.amber }}
               className="flex items-center gap-1 text-xs"
               title="Espace administrateur"
             >
-              <ShieldCheck size={14} /> Admin
+              <ShieldCheck size={13} /> Admin
             </button>
           )}
-          <button onClick={() => setShowProfileMenu(true)} style={{ color: C.textDim }} className="flex items-center gap-1.5 text-sm">
+          <button
+            onClick={() => setShowProfileMenu(true)}
+            className="flex items-center justify-center w-8 h-8 -mr-1"
+            aria-label="Profil"
+          >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+              <img src={avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
             ) : (
-              <User size={14} />
+              <span
+                aria-hidden
+                className="flex items-center justify-center"
+                style={{
+                  width: 15,
+                  height: 15,
+                  borderRadius: "50%",
+                  border: `1.5px solid ${C.textDim}`,
+                }}
+              >
+                <span
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    background: C.amber,
+                    display: "block",
+                  }}
+                />
+              </span>
             )}
-            {profile}
           </button>
         </div>
       </div>
@@ -1299,142 +1351,185 @@ function GymApp({ session }) {
         )}
 
         {tab === "history" && (
-          <div className="flex flex-col gap-3">
-            <div style={{ fontWeight: 700 }} className="text-lg mb-1">Historique</div>
+          <div className="flex flex-col">
+            <div style={{ fontWeight: 700, letterSpacing: "0.01em" }} className="text-xl mb-6">
+              Historique
+            </div>
+
             {workouts.length === 0 && (
-              <div style={{ color: C.textFaint }} className="text-sm text-center py-10">Pas encore de séance enregistrée.</div>
+              <div style={{ color: C.textFaint }} className="text-sm text-center py-16">
+                Pas encore de séance enregistrée.
+              </div>
             )}
-            {workouts.map((w) => {
-              const totalVolume = w.exercises.reduce(
-                (sum, e) => sum + e.sets.reduce((s, set) => s + set.weight * set.reps, 0),
-                0
-              );
-              const open = expandedHistory === w.id;
-              const prCount = prCountByWorkoutId[w.id] || 0;
-              const menuOpen = historyMenuId === w.id;
-              return (
-                <div key={w.id} className="il-card rounded-2xl">
-                  {/* collapsed card — tap to expand */}
-                  <div
-                    onClick={() => {
-                      setHistoryMenuId(null);
-                      setExpandedHistory(open ? null : w.id);
-                    }}
-                    className="p-3 cursor-pointer relative"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div style={{ fontWeight: 700 }} className="text-base truncate">
-                          {w.name || "Séance"}
-                        </div>
-                        <div style={{ color: C.textFaint }} className="text-xs mt-0.5">
-                          {fmtDayDate(w.date)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setHistoryMenuId(menuOpen ? null : w.id);
-                        }}
-                        style={{ color: C.textFaint }}
-                        className="p-1 -mt-1 -mr-1 flex-shrink-0"
-                        aria-label="Options de la séance"
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
-                    </div>
 
-                    <div
-                      className="flex items-center gap-4 mt-2 text-xs"
-                      style={{ color: C.textDim }}
-                    >
-                      <span className="flex items-center gap-1">
-                        <Clock size={13} /> {fmtDur(w.durationMin)}
-                      </span>
-                      <span className="il-num flex items-center gap-1">
-                        <Dumbbell size={13} /> {fmtNum(totalVolume)} kg
-                      </span>
-                      <span className="il-num flex items-center gap-1">
-                        <Trophy size={13} /> {prCount} RP
-                      </span>
-                    </div>
+            {historyMonths.map((month) => (
+              <div key={month.key} className="mb-7">
+                <div
+                  style={{ color: C.textFaint, letterSpacing: "0.18em" }}
+                  className="text-[10px] font-semibold uppercase mb-1"
+                >
+                  {month.label}
+                </div>
 
-                    {menuOpen && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ background: C.surface, border: `1px solid ${C.line}`, boxShadow: "0 8px 24px rgba(74,55,54,0.12)" }}
-                        className="absolute right-2 top-10 rounded-xl py-1 z-20"
-                      >
-                        <button
-                          onClick={() => startEditWorkout(w)}
-                          style={{ color: C.text }}
-                          className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap w-full"
-                        >
-                          <Pencil size={14} /> Modifier la séance
-                        </button>
-                        <button
+                <div style={{ borderTop: `1px solid ${C.line}` }}>
+                  {month.items.map((w) => {
+                    const totalVolume = w.exercises.reduce(
+                      (sum, e) => sum + e.sets.reduce((s, set) => s + set.weight * set.reps, 0),
+                      0
+                    );
+                    const open = expandedHistory === w.id;
+                    const prCount = prCountByWorkoutId[w.id] || 0;
+                    const menuOpen = historyMenuId === w.id;
+                    return (
+                      <div key={w.id} style={{ borderBottom: `1px solid ${C.line}` }}>
+                        {/* résumé — tap pour ouvrir le détail */}
+                        <div
                           onClick={() => {
                             setHistoryMenuId(null);
-                            deleteWorkout(w.id);
+                            setExpandedHistory(open ? null : w.id);
                           }}
-                          style={{ color: C.rust }}
-                          className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap w-full"
+                          className="py-3 cursor-pointer relative"
                         >
-                          <Trash2 size={14} /> Supprimer la séance
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* expanded — full session recap: every set of every exercise */}
-                  {open && (
-                    <div className="px-3 pb-3 rounded-b-2xl overflow-hidden flex flex-col gap-2.5" style={{ borderTop: `1px solid ${C.line}`, paddingTop: 10 }}>
-                      {w.exercises.map((e, i) => {
-                        const inSuper = !!e.superset;
-                        const vol = e.sets.reduce(
-                          (s, set) => s + Number(set.weight) * Number(set.reps),
-                          0
-                        );
-                        return (
-                          <div
-                            key={i}
-                            style={{
-                              borderLeft: `2px solid ${inSuper ? C.rust : "transparent"}`,
-                              paddingLeft: inSuper ? 8 : 0,
-                            }}
-                          >
-                            <div className="flex items-baseline justify-between gap-3">
-                              <span style={{ color: C.text, fontWeight: 600 }} className="text-sm min-w-0 truncate">
-                                {e.name}
-                              </span>
-                              <span style={{ color: C.textFaint }} className="il-num text-xs whitespace-nowrap">
-                                {e.sets.length} série{e.sets.length > 1 ? "s" : ""} · {fmtNum(vol)} kg
-                              </span>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div
+                                style={{ fontWeight: 700, color: C.text, letterSpacing: "0.06em" }}
+                                className="text-sm uppercase leading-tight truncate"
+                              >
+                                {w.name || "Séance"}
+                              </div>
+                              <div
+                                style={{ color: C.textDim, letterSpacing: "0.05em" }}
+                                className="text-[11px] uppercase mt-1"
+                              >
+                                {fmtDayDate(w.date)}
+                              </div>
                             </div>
-                            <div className="mt-1 flex flex-col gap-0.5">
-                              {e.sets.map((set, si) => (
-                                <div
-                                  key={si}
-                                  className="flex items-baseline gap-2 text-xs"
-                                  style={{ color: C.textDim }}
-                                >
-                                  <span className="il-num" style={{ color: C.textFaint, width: 14 }}>
-                                    {si + 1}
-                                  </span>
-                                  <span className="il-num">
-                                    {fmtNum(Number(set.weight))} kg × {set.reps}
-                                  </span>
-                                </div>
-                              ))}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setHistoryMenuId(menuOpen ? null : w.id);
+                              }}
+                              style={{ color: C.textFaint }}
+                              className="p-1 -mt-1 -mr-1 flex-shrink-0"
+                              aria-label="Options de la séance"
+                            >
+                              <MoreHorizontal size={16} />
+                            </button>
+                          </div>
+
+                          <div
+                            className="il-num flex flex-wrap items-baseline gap-x-6 gap-y-1 mt-2.5 text-[13px] uppercase"
+                            style={{ color: C.text, fontWeight: 600 }}
+                          >
+                            <span>{fmtTimer(w.durationMin * 60000)}</span>
+                            <span>{fmtVolume(totalVolume).toUpperCase()}</span>
+                            {prCount > 0 && (
+                              <span style={{ color: C.amber, fontWeight: 700 }}>{prCount} PR</span>
+                            )}
+                          </div>
+
+                          {menuOpen && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                background: C.surface,
+                                border: `1px solid ${C.line}`,
+                                boxShadow: "0 6px 20px rgba(0,0,0,0.22)",
+                              }}
+                              className="absolute right-0 top-8 rounded-lg py-1 z-20"
+                            >
+                              <button
+                                onClick={() => startEditWorkout(w)}
+                                style={{ color: C.text }}
+                                className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap w-full"
+                              >
+                                <Pencil size={14} /> Modifier la séance
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setHistoryMenuId(null);
+                                  deleteWorkout(w.id);
+                                }}
+                                style={{ color: C.rust }}
+                                className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap w-full"
+                              >
+                                <Trash2 size={14} /> Supprimer la séance
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* détail — toutes les séries de la séance */}
+                        {open && (
+                          <div
+                            className="my-2 px-3.5 py-3.5"
+                            style={{ background: C.surface, borderRadius: 8 }}
+                          >
+                            <div className="flex flex-col">
+                              {w.exercises.map((e, i) => {
+                                const vol = e.sets.reduce(
+                                  (s, set) => s + Number(set.weight) * Number(set.reps),
+                                  0
+                                );
+                                const prevEx = w.exercises[i - 1];
+                                const sameSuperAsPrev =
+                                  !!e.superset && !!prevEx && prevEx.superset === e.superset;
+                                return (
+                                  <div
+                                    key={i}
+                                    className={
+                                      i === 0 ? undefined : sameSuperAsPrev ? "pt-3.5" : "pt-3.5 mt-3.5"
+                                    }
+                                    style={{
+                                      ...(i > 0 && !sameSuperAsPrev
+                                        ? { borderTop: `1px solid ${C.line}` }
+                                        : {}),
+                                      ...(e.superset
+                                        ? { borderLeft: `2px solid ${C.amber}`, paddingLeft: 12 }
+                                        : {}),
+                                    }}
+                                  >
+                                    <div
+                                      style={{ color: C.text, fontWeight: 700, letterSpacing: "0.05em" }}
+                                      className="text-[12px] uppercase"
+                                    >
+                                      {e.name}
+                                    </div>
+                                    <div
+                                      style={{ color: C.textFaint }}
+                                      className="il-num text-[11px] mt-0.5"
+                                    >
+                                      {e.sets.length} série{e.sets.length > 1 ? "s" : ""} ·{" "}
+                                      {fmtVolume(vol)}
+                                    </div>
+                                    <div
+                                      className="il-num text-[13px] mt-2 flex flex-col gap-1"
+                                      style={{ color: C.textDim }}
+                                    >
+                                      {e.sets.map((set, si) => (
+                                        <div key={si} className="flex gap-3.5">
+                                          <span style={{ color: C.textFaint }}>
+                                            {String(si + 1).padStart(2, "0")}
+                                          </span>
+                                          <span style={{ color: C.text }}>
+                                            {fmtNum(Number(set.weight))} kg × {set.reps}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
 
