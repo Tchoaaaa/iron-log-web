@@ -93,24 +93,6 @@ function fmtTimer(ms) {
 function fmtNum(n) {
   return Number(n).toLocaleString("fr-FR");
 }
-// Best set of an exercise: heaviest, ties broken by most reps.
-function bestSet(sets) {
-  if (!sets || sets.length === 0) return null;
-  return sets.reduce((best, s) => {
-    const w = Number(s.weight) || 0;
-    const bw = Number(best.weight) || 0;
-    if (w > bw) return s;
-    if (w === bw && (Number(s.reps) || 0) > (Number(best.reps) || 0)) return s;
-    return best;
-  }, sets[0]);
-}
-function fmtBestSet(s) {
-  if (!s) return "—";
-  const w = Number(s.weight) || 0;
-  const r = Number(s.reps) || 0;
-  return w > 0 ? `${fmtNum(w)} kg × ${r}` : `${r} réps`;
-}
-
 // Personal note under an exercise during a workout. `onType` keeps it in
 // memory as you type; `onCommit` (on blur) persists it.
 // Personal note under an exercise during a workout. Collapsed by default —
@@ -1348,34 +1330,47 @@ function GymApp({ session }) {
                     )}
                   </div>
 
-                  {/* expanded — best set per exercise */}
+                  {/* expanded — full session recap: every set of every exercise */}
                   {open && (
-                    <div className="px-3 pb-3 rounded-b-2xl overflow-hidden" style={{ borderTop: `1px solid ${C.line}` }}>
-                      <div
-                        className="grid gap-3 pt-2 pb-1 text-xs"
-                        style={{ gridTemplateColumns: "1fr auto", color: C.textFaint, fontWeight: 600 }}
-                      >
-                        <span>Exercice</span>
-                        <span>Meilleure série</span>
-                      </div>
+                    <div className="px-3 pb-3 rounded-b-2xl overflow-hidden flex flex-col gap-2.5" style={{ borderTop: `1px solid ${C.line}`, paddingTop: 10 }}>
                       {w.exercises.map((e, i) => {
                         const inSuper = !!e.superset;
+                        const vol = e.sets.reduce(
+                          (s, set) => s + Number(set.weight) * Number(set.reps),
+                          0
+                        );
                         return (
                           <div
                             key={i}
-                            className="grid gap-3 items-baseline text-sm py-1"
                             style={{
-                              gridTemplateColumns: "1fr auto",
                               borderLeft: `2px solid ${inSuper ? C.rust : "transparent"}`,
                               paddingLeft: inSuper ? 8 : 0,
                             }}
                           >
-                            <span style={{ color: C.textDim }} className="min-w-0 truncate">
-                              <span className="il-num">{e.sets.length}</span> × {e.name}
-                            </span>
-                            <span style={{ color: C.text }} className="il-num whitespace-nowrap">
-                              {fmtBestSet(bestSet(e.sets))}
-                            </span>
+                            <div className="flex items-baseline justify-between gap-3">
+                              <span style={{ color: C.text, fontWeight: 600 }} className="text-sm min-w-0 truncate">
+                                {e.name}
+                              </span>
+                              <span style={{ color: C.textFaint }} className="il-num text-xs whitespace-nowrap">
+                                {e.sets.length} série{e.sets.length > 1 ? "s" : ""} · {fmtNum(vol)} kg
+                              </span>
+                            </div>
+                            <div className="mt-1 flex flex-col gap-0.5">
+                              {e.sets.map((set, si) => (
+                                <div
+                                  key={si}
+                                  className="flex items-baseline gap-2 text-xs"
+                                  style={{ color: C.textDim }}
+                                >
+                                  <span className="il-num" style={{ color: C.textFaint, width: 14 }}>
+                                    {si + 1}
+                                  </span>
+                                  <span className="il-num">
+                                    {fmtNum(Number(set.weight))} kg × {set.reps}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         );
                       })}
