@@ -7,7 +7,9 @@ authentification et stockage en ligne via **Supabase**.
 
 - Inscription / connexion / déconnexion par **email + mot de passe**.
 - Les séances, séances-types et la bibliothèque d'exercices sont enregistrées
-  dans Supabase, plus dans `localStorage`.
+  dans Supabase. La séance en cours est aussi mise en cache dans
+  `localStorage` (par utilisateur) pour survivre à un rechargement ou une
+  fermeture accidentelle de l'onglet.
 - **Row Level Security** : chaque utilisateur ne voit et ne modifie que ses
   propres données.
 - **Espace administrateur** séparé (statistiques d'usage : nombre
@@ -68,4 +70,5 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build
 npm run lint
+npm run test
 ```
