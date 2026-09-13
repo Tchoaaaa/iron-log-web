@@ -1,10 +1,5 @@
 // Pure numeric/aggregation helpers over workout data — no state, no side effects.
 
-export function estOneRM(weight, reps) {
-  if (!weight || !reps) return 0;
-  return Math.round(weight * (1 + reps / 30));
-}
-
 // session aggregates over a list of { sets: [{weight, reps}] }
 export function volumeOfExercises(exercises) {
   return exercises.reduce(

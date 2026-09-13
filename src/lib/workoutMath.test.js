@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  estOneRM,
   volumeOfExercises,
   repsOfExercises,
   setsOfExercises,
@@ -8,18 +7,6 @@ import {
   computePrCountByWorkoutId,
   computeHistoryMonths,
 } from "./workoutMath";
-
-describe("estOneRM", () => {
-  it("estimates a 1RM from weight and reps (Epley-style)", () => {
-    expect(estOneRM(100, 6)).toBe(120);
-  });
-  it("returns 0 when weight is missing", () => {
-    expect(estOneRM(0, 6)).toBe(0);
-  });
-  it("returns 0 when reps is missing", () => {
-    expect(estOneRM(100, 0)).toBe(0);
-  });
-});
 
 const fixture = [
   { sets: [{ weight: 100, reps: 5 }, { weight: 100, reps: 5 }] },
