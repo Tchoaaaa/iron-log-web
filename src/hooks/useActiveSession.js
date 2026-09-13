@@ -159,10 +159,12 @@ export function useActiveSession({ userId, autoRest = false }) {
     });
   };
 
-  const startFromTemplate = (tpl) => {
+  const startFromTemplate = (tpl, plannedSlot = null) => {
     setActive({
       startedAt: Date.now(),
       fromTemplate: tpl.name,
+      fromTemplateId: tpl.id,
+      plannedSlot,
       entries: tpl.exercises.map(ex => liveEntry({ kind: ex.pair ? 'superset' : 'single', name: ex.name, nameA: ex.pair?.[0], nameB: ex.pair?.[1], count: ex.sets || 1, rest: ex.rest, restA: ex.restA, restB: ex.restB, targets: ex.targets, targetsB: ex.targetsB })),
     });
   };
@@ -207,7 +209,7 @@ export function useActiveSession({ userId, autoRest = false }) {
   // in per call rather than baked into this hook, so each hook keeps owning
   // its own api.js calls and this one only touches workouts through plain
   // setters.
-  const finishWorkout = async ({ workouts, addWorkout, replaceWorkout, onError, onEmpty, onEditSaved } = {}) => {
+  const finishWorkout = async ({ workouts, addWorkout, replaceWorkout, onError, onEmpty, onEditSaved, onRecorded } = {}) => {
     if (savingRef.current) return;
     if (!active || active.entries.length === 0) {
       clearActive();
@@ -284,6 +286,10 @@ export function useActiveSession({ userId, autoRest = false }) {
         trend,
       });
       clearActive();
+      // A planning write must never roll back a successfully saved workout or
+      // leave it active to be saved twice. Manual association remains available.
+      try { await onRecorded?.(saved, active); }
+      catch (error) { onError?.(error.message || "La séance est enregistrée, mais son association au planning a échoué."); }
     } catch (err) {
       onError?.(err.message || "Impossible d'enregistrer la séance.");
     } finally {

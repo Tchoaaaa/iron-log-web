@@ -53,6 +53,18 @@ export async function updatePreferences(patch) {
   return data.user.user_metadata;
 }
 
+// The plan is a small personal preference: seven template IDs and two week
+// snapshots of IDs only. Read fresh metadata before a write to avoid replacing
+// another setting (such as auto_rest) with an old session copy.
+export async function updateTrainingPlan(transform) {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error("Connecte-toi pour enregistrer ta semaine.");
+  const next = transform(data.user.user_metadata?.training_plan);
+  const metadata = await updatePreferences({ training_plan: next });
+  return metadata.training_plan;
+}
+
 // ---------- profile ----------
 export async function getProfile() {
   const id = await requireUserId();

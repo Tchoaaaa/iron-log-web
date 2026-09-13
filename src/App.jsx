@@ -8,6 +8,9 @@ import AdminDashboard from "./screens/AdminDashboard";
 import HistoryScreen from "./screens/HistoryScreen";
 import PRScreen from "./screens/PRScreen";
 import HomeScreen from "./screens/HomeScreen";
+import WeekSetupScreen from "./screens/WeekSetupScreen";
+import PlannedSessionDrawer from "./components/PlannedSessionDrawer";
+import { useWeeklyPlan } from "./hooks/useWeeklyPlan";
 import TemplatesScreen from "./screens/TemplatesScreen";
 import WorkoutScreen from "./screens/WorkoutScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -60,6 +63,10 @@ function GymApp({ session }) {
       new URLSearchParams(window.location.search).get("confirmed") === "1" &&
       !!session.user.email_confirmed_at,
   );
+  const [selectedWeekDay, setSelectedWeekDay] = useState(null);
+  const weekly = useWeeklyPlan({ user: session.user, templates, workouts, enabled: !loading && !loadError });
+  const selectedWeekRow = weekly.rows.find(row => row.key === selectedWeekDay && row.slot);
+  const openWeek = () => { setSelectedWeekDay(null); setTab("week"); window.scrollTo({ top: 0 }); };
   const applyInitialData = useEffectEvent(([prof, ex, wk, tpl, admin]) => {
     profileHook.applyProfileFromServer(prof);
     libraryHook.applyFromServer(ex);
@@ -100,8 +107,11 @@ function GymApp({ session }) {
     setTab("workout");
   };
   const startWorkout = () => start(activeSession.startWorkout);
-  const startFromTemplate = (tpl) =>
-    start(() => activeSession.startFromTemplate(tpl));
+  const startFromTemplate = (tpl, plannedSlot = null) =>
+    start(() => activeSession.startFromTemplate(tpl, plannedSlot));
+  const startPlanned = row => {
+    if (row.template) startFromTemplate(row.template, { weekStart: row.weekStart, day: row.key, templateId: row.slot.templateId });
+  };
   const editWorkout = (w) => start(() => activeSession.startEditWorkout(w));
   const finish = () =>
     activeSession.finishWorkout({
@@ -111,6 +121,7 @@ function GymApp({ session }) {
       onError: setDataError,
       onEmpty: () => setTab("home"),
       onEditSaved: () => setTab("history"),
+      onRecorded: weekly.recordCompletion,
     });
   const selectTab = (next) => {
     setTab(next);
@@ -179,6 +190,10 @@ function GymApp({ session }) {
             )}
             {tab === "home" && (
               <HomeScreen
+                weekly={weekly}
+                onEditWeek={openWeek}
+                onSelectWeekDay={setSelectedWeekDay}
+                onStartPlanned={startPlanned}
                 workouts={workouts}
                 templates={templates}
                 profile={profileHook.profile}
@@ -266,6 +281,9 @@ function GymApp({ session }) {
                 onError={setDataError}
               />
             </div>
+            {tab === "week" && (
+              <WeekSetupScreen weekly={weekly} templates={templates} onClose={() => selectTab("home")} onGoToTemplates={() => selectTab("templates")} />
+            )}
             {tab === "profile" && (
               <ProfileScreen
                 profileHook={profileHook}
@@ -276,7 +294,7 @@ function GymApp({ session }) {
             )}
           </main>
           <BottomBar
-            tab={tab}
+            tab={tab === "week" ? "home" : tab}
             active={activeSession.active}
             templateDraft={templateDraft}
             finishing={activeSession.finishing}
@@ -295,6 +313,11 @@ function GymApp({ session }) {
             setTab("history");
           }}
         />
+      )}
+      {selectedWeekRow && tab === "home" && (
+        <PlannedSessionDrawer row={selectedWeekRow} weekly={weekly} workouts={workouts}
+          onClose={() => setSelectedWeekDay(null)} onStart={startPlanned} onEdit={openWeek}
+          onHistory={id => { setTab("history"); setHistoryView("history"); setHistoryOrigin("home"); setExpandedHistory(id); }} />
       )}
       {profileHook.showData && (
         <DataEditModal

@@ -89,3 +89,7 @@ La préférence `auto_rest` est enregistrée dans les métadonnées personnelles
 ### Vérifications
 
 `npm run test` et `npm run build` vérifient la logique et la compilation. Le script facultatif `scripts/verify-browser.mjs` utilise Playwright et Chrome avec des réponses Supabase simulées ; il ne crée pas de compte réel et n’envoie aucun e-mail. Lancer d’abord le serveur local sur le port 5174, puis exécuter le script avec Playwright disponible dans l’environnement (`PLAYWRIGHT_MODULE` permet d’indiquer son chemin). Le rapport détaillé est dans `VERIFICATION.md`.
+
+## Planification hebdomadaire
+
+L’accueil propose une semaine type récurrente, des ajustements pour la semaine en cours et un démarrage de la séance du jour. Stockage dans les métadonnées personnelles Supabase Auth, sans migration SQL. Voir [WEEKLY_PLANNING.md](WEEKLY_PLANNING.md) pour les règles et les vérifications.
