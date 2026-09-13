@@ -4,12 +4,9 @@
 // fait que pointer vers ces variables, donc tout composant qui lit `C.*`
 // bascule automatiquement clair / sombre.
 //
-// Palettes exactes
-//   LIGHT  bg #EFEFEC · surface #F7F7F4 · primary #292A29 · secondary #858681
-//          tertiary #A9AAA5 · border #D5D5D0 · signal #7CCBC6
-//   DARK   bg #414246 · surface #48494D · primary #F0EFEB · secondary #A6A6A2
-//          tertiary #85868A · border #595A5E · signal #7CCBC6
-// Typo : Space Grotesk (titres / UI) · Space Mono (données / chiffres)
+// Mineral surfaces retain the brand palette. Secondary text and control
+// outlines use stronger contrast in both system color schemes.
+// Typography: Space Grotesk (UI), Space Mono (measurements).
 export const C = {
   bg: "var(--c-bg)",
   surface: "var(--c-surface)",

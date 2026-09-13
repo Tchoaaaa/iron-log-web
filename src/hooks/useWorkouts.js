@@ -19,11 +19,13 @@ export function useWorkouts() {
     setWorkouts((prev) => prev.map((w) => (w.id === id ? saved : w)));
 
   const deleteWorkout = async (id, { onError } = {}) => {
-    setWorkouts((prev) => prev.filter((w) => w.id !== id));
     try {
       await api.deleteWorkout(id);
+      setWorkouts((prev) => prev.filter((w) => w.id !== id));
+      return true;
     } catch (err) {
       onError?.(err.message || "Suppression impossible.");
+      return false;
     }
   };
 

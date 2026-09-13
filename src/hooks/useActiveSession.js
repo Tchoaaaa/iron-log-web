@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import * as api from "../lib/api";
 import { uid } from "../lib/constants";
 import { volumeOfExercises, repsOfExercises, setsOfExercises } from "../lib/workoutMath";
+import { liveEntry, replaceLiveEntry } from "../lib/exercisePlan";
+import { elapsedSessionMs, toggleSessionPause, validSet } from "../lib/sessionTimer";
 import { readJSON, writeJSON, debounce } from "../lib/storage";
 
 const storageKey = (userId) => `gymapp:active-session:${userId}`;
@@ -22,14 +24,14 @@ export function cleanActiveEntries(entries) {
           name: e.nameA,
           superset: e.id,
           sets: e.sets
-            .filter((s) => s.weightA !== "" && s.repsA !== "")
+            .filter((s) => validSet(s.weightA, s.repsA))
             .map((s) => ({ weight: Number(s.weightA), reps: Number(s.repsA) })),
         };
         const b = {
           name: e.nameB,
           superset: e.id,
           sets: e.sets
-            .filter((s) => s.weightB !== "" && s.repsB !== "")
+            .filter((s) => validSet(s.weightB, s.repsB))
             .map((s) => ({ weight: Number(s.weightB), reps: Number(s.repsB) })),
         };
         return [a, b];
@@ -38,7 +40,7 @@ export function cleanActiveEntries(entries) {
         {
           name: e.name,
           sets: e.sets
-            .filter((s) => s.weight !== "" && s.reps !== "")
+            .filter((s) => validSet(s.weight, s.reps))
             .map((s) => ({ weight: Number(s.weight), reps: Number(s.reps) })),
         },
       ];
@@ -104,45 +106,41 @@ export function groupExercisesIntoEntries(exercises) {
 // The in-progress (or being-edited) workout session: entries, live chrono,
 // end-of-session recap, and a `finishing` busy flag so the save button can
 // disable itself against double taps. `active` is mirrored to localStorage
-// (debounced) so a refresh or crash doesn't silently lose it, and restored
+// after every edit so a refresh does not silently lose it, and restored
 // on mount — namespaced per user since `GymApp` remounts on account switch.
-export function useActiveSession({ userId }) {
+export function useActiveSession({ userId, autoRest = false }) {
   const key = storageKey(userId);
   const [active, setActive] = useState(() => {
     const restored = readJSON(key);
     return isValidActive(restored) ? restored : null;
   });
-  const [now, setNow] = useState(() => Date.now());
   const [sessionSummary, setSessionSummary] = useState(null);
   const [finishing, setFinishing] = useState(false);
 
+  const savingRef = useRef(false);
+  // Debounced: logging a set fires a state change per keystroke, and
+  // writeJSON's JSON.stringify + localStorage write shouldn't run on every
+  // one of those on a phone.
   const debouncedPersist = useRef(debounce((value) => writeJSON(key, value), 400)).current;
   useEffect(() => {
     debouncedPersist(active);
   }, [active, debouncedPersist]);
   useEffect(() => () => debouncedPersist.cancel(), [debouncedPersist]);
-
-  // Ends the session and clears its localStorage backup immediately —
-  // don't rely on the debounced write, which could lose the race if the
-  // tab closes right after finishing/discarding.
   const clearActive = () => {
     debouncedPersist.cancel();
     writeJSON(key, null);
     setActive(null);
   };
 
-  // live chrono while a workout is running (not while editing a past one)
+  // live chrono while a workout is running (not while editing a past one).
+  // The actual 1s tick lives in <SessionTimers> inside WorkoutScreen, not
+  // here — a ticking state at this level would re-render the whole app
+  // shell every second for as long as a workout is running.
   const timing = !!active && !active.editId;
-  // a séance started from a template keeps its exercise list fixed — add /
-  // remove is done outside the séance (in the template, or when editing a
-  // past one). An ad-hoc "Séance vide" stays editable.
+  // A séance started from a template keeps its exercise list fixed — add /
+  // remove / swap is done outside the séance (in the template itself, or
+  // when editing a past one). An ad-hoc "Séance vide" stays fully editable.
   const lockedExercises = !!active && !active.editId && !!active.fromTemplate;
-  useEffect(() => {
-    if (!timing) return;
-    setNow(Date.now());
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, [timing]);
 
   const startWorkout = () => {
     setActive({ startedAt: Date.now(), entries: [], fromTemplate: null });
@@ -165,53 +163,30 @@ export function useActiveSession({ userId }) {
     setActive({
       startedAt: Date.now(),
       fromTemplate: tpl.name,
-      entries: tpl.exercises.map((ex) =>
-        ex.pair
-          ? {
-              id: uid(),
-              kind: "superset",
-              name: ex.name,
-              nameA: ex.pair[0],
-              nameB: ex.pair[1],
-              restA: ex.restA,
-              restB: ex.restB,
-              sets: Array.from({ length: ex.sets || 1 }, () => ({ weightA: "", repsA: "", doneA: false, weightB: "", repsB: "", doneB: false })),
-            }
-          : {
-              id: uid(),
-              kind: "single",
-              name: ex.name,
-              rest: ex.rest,
-              sets: Array.from({ length: ex.sets || 1 }, () => ({ weight: "", reps: "", done: false })),
-            }
-      ),
+      entries: tpl.exercises.map(ex => liveEntry({ kind: ex.pair ? 'superset' : 'single', name: ex.name, nameA: ex.pair?.[0], nameB: ex.pair?.[1], count: ex.sets || 1, rest: ex.rest, restA: ex.restA, restB: ex.restB, targets: ex.targets, targetsB: ex.targetsB })),
     });
   };
 
-  // Turns a picker entry descriptor into a live workout entry (own id, and
-  // per-set fields initialized empty/undone).
-  const addEntryToActive = (entry) => {
-    setActive((a) => ({
-      ...a,
-      entries: [
-        ...a.entries,
-        entry.kind === "superset"
-          ? {
-              id: uid(),
-              kind: "superset",
-              name: `${entry.nameA} + ${entry.nameB}`,
-              nameA: entry.nameA,
-              nameB: entry.nameB,
-              sets: Array.from({ length: entry.count }, () => ({ weightA: "", repsA: "", doneA: false, weightB: "", repsB: "", doneB: false })),
-            }
-          : {
-              id: uid(),
-              kind: "single",
-              name: entry.name,
-              sets: Array.from({ length: entry.count }, () => ({ weight: "", reps: "", done: false })),
-            },
-      ],
-    }));
+  const addEntryToActive = (entry) => setActive(a => a ? ({ ...a, entries: [...a.entries, liveEntry(entry)] }) : a);
+  const editEntry = (id, plan) => setActive(a => ({ ...a, entries: a.entries.flatMap(e => e.id === id ? replaceLiveEntry(e, plan) : [e]) }));
+  const togglePause = () => { const time = Date.now(); setActive(a => toggleSessionPause(a, time)); };
+  const startRest = (seconds = 90, label = 'Repos') => {
+    const time = Date.now();
+    setActive(a => a ? { ...a, restTimer: seconds > 0 ? { endsAt: time + seconds * 1000, seconds, label } : null } : a);
+  };
+  const stopRest = () => setActive(a => a ? { ...a, restTimer: null } : a);
+  const completeSet = (entryId, idx, doneKey, rest, label) => {
+    const time = Date.now();
+    setActive(a => {
+      const entry = a.entries.find(e => e.id === entryId);
+      const set = entry.sets[idx];
+      const suffix = doneKey.replace('done', '');
+      const done = !set[doneKey];
+      if (done && !validSet(set['weight' + suffix], set['reps' + suffix])) return a;
+      const seconds = rest ?? 90;
+      return { ...a, entries: a.entries.map(e => e.id === entryId ? { ...e, sets: e.sets.map((s, i) => i === idx ? { ...s, [doneKey]: done } : s) } : e),
+        ...(done && autoRest && !a.editId && seconds > 0 ? { restTimer: { endsAt: time + seconds * 1000, seconds, label } } : {}) };
+    });
   };
 
   const updateSet = (entryId, idx, field, value) => {
@@ -233,12 +208,13 @@ export function useActiveSession({ userId }) {
   // its own api.js calls and this one only touches workouts through plain
   // setters.
   const finishWorkout = async ({ workouts, addWorkout, replaceWorkout, onError, onEmpty, onEditSaved } = {}) => {
+    if (savingRef.current) return;
     if (!active || active.entries.length === 0) {
       clearActive();
       onEmpty?.();
       return;
     }
-    const durationMin = Math.max(1, Math.round((Date.now() - active.startedAt) / 60000));
+    const durationMin = Math.max(1, Math.round(elapsedSessionMs(active, Date.now()) / 60000));
     const cleaned = cleanActiveEntries(active.entries);
 
     if (cleaned.length === 0) {
@@ -247,6 +223,7 @@ export function useActiveSession({ userId }) {
       return;
     }
 
+    savingRef.current = true;
     setFinishing(true);
     try {
       if (active.editId) {
@@ -298,7 +275,7 @@ export function useActiveSession({ userId }) {
       addWorkout(saved);
       setSessionSummary({
         name: active.fromTemplate || null,
-        elapsedMs: Date.now() - active.startedAt,
+        elapsedMs: elapsedSessionMs(active, Date.now()),
         setCount: setsOfExercises(cleaned),
         volume: volNow,
         loadPct,
@@ -310,6 +287,7 @@ export function useActiveSession({ userId }) {
     } catch (err) {
       onError?.(err.message || "Impossible d'enregistrer la séance.");
     } finally {
+      savingRef.current = false;
       setFinishing(false);
     }
   };
@@ -322,7 +300,6 @@ export function useActiveSession({ userId }) {
 
   return {
     active,
-    now,
     sessionSummary,
     finishing,
     timing,
@@ -333,6 +310,11 @@ export function useActiveSession({ userId }) {
     addEntryToActive,
     updateSet,
     removeEntry,
+    editEntry,
+    togglePause,
+    startRest,
+    stopRest,
+    completeSet,
     finishWorkout,
     discardWorkout,
     dismissSessionSummary,

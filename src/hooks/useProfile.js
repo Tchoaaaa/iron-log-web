@@ -1,160 +1,185 @@
 import { useRef, useState } from "react";
 import * as api from "../lib/api";
+import { validateProfile } from "../lib/profileValidation";
+import { readJSON, writeJSON, debounce } from "../lib/storage";
+import { cropSquareToDataUrl } from "../lib/imageCrop";
 
-// Account/profile state: display name, avatar, body metrics, and the two
-// UI surfaces that edit them (the profile bottom sheet and the data modal).
-export function useProfile({ email }) {
+export function useProfile({ email, user }) {
   const [profile, setProfile] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(null);
-  const [metrics, setMetrics] = useState({ age: null, weight_kg: null, height_cm: null, daily_steps: null });
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [metrics, setMetrics] = useState({});
+  const [autoRest, setAutoRest] = useState(
+    user.user_metadata?.auto_rest === true,
+  );
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [showData, setShowData] = useState(false);
-  const [dataForm, setDataForm] = useState({ name: "", age: "", weight: "", height: "", steps: "" });
+  const [dataForm, setDataForm] = useState({
+    name: "",
+    age: "",
+    weight: "",
+    height: "",
+    steps: "",
+  });
   const [dataFormError, setDataFormError] = useState("");
   const [dataBusy, setDataBusy] = useState(false);
-  const fileInputRef = useRef(null);
-
+  const [profileError, setProfileError] = useState("");
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [preferenceBusy, setPreferenceBusy] = useState(false);
+  const draftKey = `gymapp:onboarding:${user.id}`;
+  const debouncedDraftWrite = useRef(debounce((value) => writeJSON(draftKey, value), 400)).current;
   function applyProfileFromServer(prof) {
-    setProfile((prof && prof.display_name) || (email ? email.split("@")[0] : "Moi"));
-    setAvatarUrl((prof && prof.avatar_url) || null);
-    setMetrics({
-      age: prof && prof.age != null ? prof.age : null,
-      weight_kg: prof && prof.weight_kg != null ? Number(prof.weight_kg) : null,
-      height_cm: prof && prof.height_cm != null ? Number(prof.height_cm) : null,
-      daily_steps: prof && prof.daily_steps != null ? Number(prof.daily_steps) : null,
-    });
+    const name = prof?.display_name || email?.split("@")[0] || "Moi";
+    setProfile(name);
+    setAvatarUrl(prof?.avatar_url || null);
+    const next = {
+      age: prof?.age ?? null,
+      weight_kg: prof?.weight_kg ?? null,
+      height_cm: prof?.height_cm ?? null,
+      daily_steps: prof?.daily_steps ?? null,
+    };
+    setMetrics(next);
+    const missing = Object.values(next).some((v) => v == null);
+    setNeedsOnboarding(missing);
+    if (missing) setDataForm({ ...formFor(name, next), ...readJSON(draftKey) });
   }
-
-  const signOut = async () => {
-    setShowProfileMenu(false);
-    try {
-      await api.signOut();
-    } catch {
-      /* the auth listener still clears the session */
-    }
-  };
-
-  const openProfileMenu = () => setShowProfileMenu(true);
-  const closeProfileMenu = () => setShowProfileMenu(false);
-
+  function formFor(name, m) {
+    return {
+      name,
+      age: m.age ?? "",
+      weight: m.weight_kg ?? "",
+      height: m.height_cm ?? "",
+      steps: m.daily_steps ?? "",
+    };
+  }
   const openData = () => {
-    setDataForm({
-      name: profile,
-      age: metrics.age != null ? String(metrics.age) : "",
-      weight: metrics.weight_kg != null ? String(metrics.weight_kg) : "",
-      height: metrics.height_cm != null ? String(metrics.height_cm) : "",
-      steps: metrics.daily_steps != null ? String(metrics.daily_steps) : "",
-    });
+    setDataForm(formFor(profile, metrics));
     setDataFormError("");
     setShowData(true);
   };
-  const closeData = () => setShowData(false);
-
   const setDataFormField = (field, value) => {
-    setDataForm((f) => ({ ...f, [field]: value }));
+    setDataForm((f) => {
+      const next = { ...f, [field]: value };
+      if (needsOnboarding) debouncedDraftWrite(next);
+      return next;
+    });
     setDataFormError("");
   };
-
   const saveData = async () => {
-    const name = dataForm.name.trim();
-    if (!name) {
-      setDataFormError("Le nom ne peut pas être vide.");
-      return;
-    }
-    // "" -> null (champ effacé) ; sinon un nombre positif
-    const parseNum = (v) => {
-      const s = String(v).replace(",", ".").trim();
-      if (s === "") return null;
-      const n = Number(s);
-      return Number.isFinite(n) && n >= 0 ? n : NaN;
-    };
-    const age = parseNum(dataForm.age);
-    const weight = parseNum(dataForm.weight);
-    const height = parseNum(dataForm.height);
-    const steps = parseNum(dataForm.steps);
-    if ([age, weight, height, steps].some((n) => Number.isNaN(n))) {
-      setDataFormError("Âge, poids, taille et pas doivent être des nombres positifs.");
-      return;
-    }
-    const ageInt = age == null ? null : Math.round(age);
-    const stepsInt = steps == null ? null : Math.round(steps);
-    setDataBusy(true);
+    if (dataBusy) return;
+    let patch;
     try {
-      await api.updateProfile({
-        display_name: name,
-        age: ageInt,
-        weight_kg: weight,
-        height_cm: height,
-        daily_steps: stepsInt,
+      patch = validateProfile(dataForm, needsOnboarding);
+    } catch (e) {
+      setDataFormError(e.message);
+      return;
+    }
+    setDataBusy(true);
+    setDataFormError("");
+    try {
+      const saved = await api.updateProfile(patch);
+      setProfile(saved.display_name);
+      setMetrics({
+        age: saved.age,
+        weight_kg: saved.weight_kg,
+        height_cm: saved.height_cm,
+        daily_steps: saved.daily_steps,
       });
-      setProfile(name);
-      setMetrics({ age: ageInt, weight_kg: weight, height_cm: height, daily_steps: stepsInt });
       setShowData(false);
-      setShowProfileMenu(false);
-    } catch (err) {
-      setDataFormError(err.message || "Impossible d'enregistrer.");
+      setNeedsOnboarding(false);
+      debouncedDraftWrite.cancel();
+      writeJSON(draftKey, null);
+    } catch (e) {
+      setDataFormError(e.message || "Enregistrement impossible. Réessaie.");
     } finally {
       setDataBusy(false);
     }
   };
-
-  const triggerAvatarUpload = () => {
-    fileInputRef.current?.click();
+  const saveAutoRest = async (value) => {
+    if (preferenceBusy) return;
+    const previous = autoRest;
+    setAutoRest(value);
+    setPreferenceBusy(true);
+    setProfileError("");
+    try {
+      await api.updatePreferences({ auto_rest: value });
+      setAutoRest(value);
+    } catch {
+      setAutoRest(previous);
+      setProfileError("La préférence n’a pas été enregistrée. Réessaie.");
+    } finally {
+      setPreferenceBusy(false);
+    }
   };
-
+  const signOut = async () => {
+    setProfileError("");
+    try {
+      await api.signOut();
+    } catch {
+      setProfileError("Déconnexion impossible. Réessaie.");
+    }
+  };
+  const saveAvatar = async (dataUrl) => {
+    setAvatarBusy(true);
+    setProfileError("");
+    try {
+      await api.updateProfile({ avatar_url: dataUrl });
+      setAvatarUrl(dataUrl);
+      return true;
+    } catch {
+      setProfileError("La photo n’a pas été enregistrée. Réessaie.");
+      return false;
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
   const handleAvatarFile = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const dataUrl = await new Promise((resolve, reject) => {
-      const img = new Image();
-      const reader = new FileReader();
-      reader.onload = () => {
-        img.onload = () => {
-          const size = 240;
-          const canvas = document.createElement("canvas");
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext("2d");
-          const side = Math.min(img.width, img.height);
-          ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
-          resolve(canvas.toDataURL("image/jpeg", 0.85));
-        };
-        img.onerror = reject;
-        img.src = reader.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    }).catch(() => null);
-    if (!dataUrl) return;
-    try {
-      await api.updateProfile({ avatar_url: dataUrl });
-      setAvatarUrl(dataUrl);
-    } catch {
-      /* keep the previous avatar on failure */
+    if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) {
+      setProfileError("Choisis une image de moins de 10 Mo.");
+      return;
     }
-    setShowProfileMenu(false);
+    setAvatarBusy(true);
+    setProfileError("");
+    const url = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      await saveAvatar(cropSquareToDataUrl(image, { width: image.width, height: image.height }));
+    } catch {
+      setProfileError(
+        "Cette image est illisible. Essaie un fichier JPEG ou PNG.",
+      );
+    } finally {
+      URL.revokeObjectURL(url);
+      setAvatarBusy(false);
+    }
   };
-
   return {
     profile,
     avatarUrl,
     metrics,
-    showProfileMenu,
+    autoRest,
+    needsOnboarding,
     showData,
     dataForm,
     dataFormError,
     dataBusy,
-    fileInputRef,
+    profileError,
+    avatarBusy,
+    preferenceBusy,
     applyProfileFromServer,
-    signOut,
-    openProfileMenu,
-    closeProfileMenu,
     openData,
-    closeData,
+    closeData: () => {
+      if (!dataBusy) setShowData(false);
+    },
     setDataFormField,
     saveData,
-    triggerAvatarUpload,
+    saveAutoRest,
+    signOut,
+    saveAvatar,
     handleAvatarFile,
   };
 }

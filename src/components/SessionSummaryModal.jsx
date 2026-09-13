@@ -55,9 +55,9 @@ export default function SessionSummaryModal({ summary, onDone }) {
               </div>
               <div
                 className="il-num text-lg"
-                style={{ fontWeight: 700, color: s.p >= 0 ? C.amber : C.rust }}
+                style={{ fontWeight: 700, color: summary.firstTime ? C.textDim : s.p >= 0 ? "var(--c-accent-text)" : C.rust }}
               >
-                {`${s.p >= 0 ? "+" : ""}${s.p.toFixed(1)} %`}
+                {summary.firstTime ? "—" : `${s.p >= 0 ? "+" : ""}${s.p.toFixed(1)} %`}
               </div>
             </div>
           ))}

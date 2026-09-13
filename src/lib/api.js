@@ -23,7 +23,7 @@ export async function signUp({ email, password, displayName }) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: (displayName || "").trim() } },
+    options: { emailRedirectTo: new URL("?confirmed=1", window.location.origin).href, data: { display_name: (displayName || "").trim() } },
   });
   if (error) throw error;
   // If email confirmation is enabled, data.session is null until confirmed.
@@ -41,16 +41,19 @@ export async function signOut() {
   if (error) throw error;
 }
 
-// ---------- profile ----------
-// `age` / `weight_kg` / `height_cm` were added after the first release. The
-// helpers below still work if that migration hasn't run yet (see
-// supabase-schema.sql): reads use select("*"), and a write that mentions a
-// missing column is retried without the body-metrics fields.
-const MISSING_METRIC_COL = (error) =>
-  !!error &&
-  /(age|weight_kg|height_cm|daily_steps)/i.test(error.message || "") &&
-  /(column|schema cache|does not exist|could not find)/i.test(error.message || "");
+export async function resendConfirmation(email) {
+  const { error } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: new URL('?confirmed=1', window.location.origin).href } });
+  if (error) throw error;
+}
 
+// Personal preferences only. These editable fields never grant access or roles.
+export async function updatePreferences(patch) {
+  const { data, error } = await supabase.auth.updateUser({ data: patch });
+  if (error) throw error;
+  return data.user.user_metadata;
+}
+
+// ---------- profile ----------
 export async function getProfile() {
   const id = await requireUserId();
   const { data, error } = await supabase
@@ -65,13 +68,9 @@ export async function getProfile() {
 export async function updateProfile(patch) {
   const id = await requireUserId();
   const body = { ...patch, updated_at: new Date().toISOString() };
-  let { error } = await supabase.from("profiles").update(body).eq("id", id);
-  if (MISSING_METRIC_COL(error)) {
-    // body-metrics columns not migrated yet — save everything else
-    const { age, weight_kg, height_cm, daily_steps, ...rest } = body;
-    ({ error } = await supabase.from("profiles").update(rest).eq("id", id));
-  }
+  const { data, error } = await supabase.from("profiles").update(body).eq("id", id).select("*").single();
   if (error) throw error;
+  return data;
 }
 
 // ---------- exercise library ----------

@@ -1,8 +1,20 @@
 import { useMemo, useState } from "react";
-import { Pencil, Trash2, MoreHorizontal } from "lucide-react";
-import { C } from "../lib/theme";
-import { fmtDayDate, fmtTimer, fmtVolume, fmtNum } from "../lib/format";
-import { computePrCountByWorkoutId, computeHistoryMonths } from "../lib/workoutMath";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Pencil,
+  SlidersHorizontal,
+  Trash2,
+  Plus,
+} from "lucide-react";
+import { fmtDate, fmtDur, fmtVolume, fmtNum } from "../lib/format";
+import {
+  volumeOfExercises,
+  computePrCountByWorkoutId,
+  computeHistoryMonths,
+} from "../lib/workoutMath";
+import { EMPTY_FILTERS, filterWorkouts } from "../lib/historyFilters";
+import Drawer from "../components/Drawer";
 
 export default function HistoryScreen({
   workouts,
@@ -10,193 +22,282 @@ export default function HistoryScreen({
   setExpandedHistory,
   onEditWorkout,
   onDeleteWorkout,
+  onStartWorkout,
+  filters,
+  setFilters,
+  onBack,
 }) {
-  const [historyMenuId, setHistoryMenuId] = useState(null);
-
-  const prCountByWorkoutId = useMemo(() => computePrCountByWorkoutId(workouts), [workouts]);
-  // séances groupées par mois (workouts est déjà trié du + récent au + ancien)
-  const historyMonths = useMemo(() => computeHistoryMonths(workouts), [workouts]);
-
-  return (
-    <div className="flex flex-col">
-      <div style={{ fontWeight: 700, letterSpacing: "0.01em" }} className="text-xl mb-6">
-        Historique
-      </div>
-
-      {workouts.length === 0 && (
-        <div style={{ color: C.textFaint }} className="text-sm text-center py-16">
-          Pas encore de séance enregistrée.
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draft, setDraft] = useState(filters);
+  const [deleting, setDeleting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const counts = useMemo(() => computePrCountByWorkoutId(workouts), [workouts]);
+  const filtered = useMemo(
+    () => filterWorkouts(workouts, filters),
+    [workouts, filters],
+  );
+  const months = useMemo(() => computeHistoryMonths(filtered), [filtered]);
+  const selected = workouts.find((w) => w.id === expandedHistory);
+  const applied = Object.entries(filters).filter(([k, v]) =>
+    k === "type" ? v !== "all" : !!v,
+  ).length;
+  if (selected)
+    return (
+      <section className="flex flex-col gap-5">
+        <button
+          className="text-button justify-start"
+          onClick={() => {
+            setDeleting(false);
+            setExpandedHistory(null);
+            onBack?.();
+          }}
+        >
+          <ArrowLeft size={17} /> Retour
+        </button>
+        <div>
+          <p className="eyebrow">SÉANCE ENREGISTRÉE</p>
+          <h1 className="page-title mt-2">{selected.name || "Séance libre"}</h1>
+          <p className="muted text-sm mt-2">{fmtDate(selected.date)}</p>
         </div>
-      )}
-
-      {historyMonths.map((month) => (
-        <div key={month.key} className="mb-7">
-          <div
-            style={{ color: C.textFaint, letterSpacing: "0.18em" }}
-            className="text-[10px] font-semibold uppercase mb-1"
+        <div className="session-stats">
+          <div>
+            <small>Durée</small>
+            <strong>{fmtDur(selected.durationMin)}</strong>
+          </div>
+          <div>
+            <small>Volume</small>
+            <strong>{fmtVolume(volumeOfExercises(selected.exercises))}</strong>
+          </div>
+          <div>
+            <small>Records</small>
+            <strong>{counts[selected.id] || 0}</strong>
+          </div>
+        </div>
+        {selected.exercises.map((ex, index) => (
+          <article key={index} className="exercise-card">
+            {ex.superset && <p className="eyebrow mb-2">SUPERSET</p>}
+            <h2 className="font-semibold">{ex.name}</h2>
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>Série</th>
+                  <th>Charge</th>
+                  <th>Reps</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ex.sets.map((s, i) => (
+                  <tr key={i}>
+                    <td>{String(i + 1).padStart(2, "0")}</td>
+                    <td>{fmtNum(s.weight)} kg</td>
+                    <td>{s.reps}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </article>
+        ))}
+        <button className="secondary" onClick={() => onEditWorkout(selected)}>
+          <Pencil size={16} /> Modifier la séance
+        </button>
+        <button className="text-button error" onClick={() => setDeleting(true)}>
+          <Trash2 size={16} /> Supprimer la séance
+        </button>
+        {deleting && (
+          <Drawer
+            title="Supprimer cette séance ?"
+            onClose={() => setDeleting(false)}
+            busy={busy}
           >
-            {month.label}
-          </div>
-
-          <div style={{ borderTop: `1px solid ${C.line}` }}>
-            {month.items.map((w) => {
-              const totalVolume = w.exercises.reduce(
-                (sum, e) => sum + e.sets.reduce((s, set) => s + set.weight * set.reps, 0),
-                0
-              );
-              const open = expandedHistory === w.id;
-              const prCount = prCountByWorkoutId[w.id] || 0;
-              const menuOpen = historyMenuId === w.id;
-              return (
-                <div key={w.id} style={{ borderBottom: `1px solid ${C.line}` }}>
-                  {/* résumé — tap pour ouvrir le détail */}
-                  <div
-                    onClick={() => {
-                      setHistoryMenuId(null);
-                      setExpandedHistory(open ? null : w.id);
-                    }}
-                    className="py-3 cursor-pointer relative"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div
-                          style={{ fontWeight: 700, color: C.text, letterSpacing: "0.06em" }}
-                          className="text-sm uppercase leading-tight truncate"
-                        >
-                          {w.name || "Séance"}
-                        </div>
-                        <div
-                          style={{ color: C.textDim, letterSpacing: "0.05em" }}
-                          className="text-[11px] uppercase mt-1"
-                        >
-                          {fmtDayDate(w.date)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setHistoryMenuId(menuOpen ? null : w.id);
-                        }}
-                        style={{ color: C.textFaint }}
-                        className="p-1 -mt-1 -mr-1 flex-shrink-0"
-                        aria-label="Options de la séance"
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                    </div>
-
-                    <div
-                      className="il-num flex flex-wrap items-baseline gap-x-6 gap-y-1 mt-2.5 text-[13px] uppercase"
-                      style={{ color: C.text, fontWeight: 600 }}
-                    >
-                      <span>{fmtTimer(w.durationMin * 60000)}</span>
-                      <span>{fmtVolume(totalVolume).toUpperCase()}</span>
-                      {prCount > 0 && (
-                        <span style={{ color: C.amber, fontWeight: 700 }}>{prCount} PR</span>
-                      )}
-                    </div>
-
-                    {menuOpen && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          background: C.surface,
-                          border: `1px solid ${C.line}`,
-                          boxShadow: "0 6px 20px rgba(0,0,0,0.22)",
-                        }}
-                        className="absolute right-0 top-8 rounded-lg py-1 z-20"
-                      >
-                        <button
-                          onClick={() => onEditWorkout(w)}
-                          style={{ color: C.text }}
-                          className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap w-full"
-                        >
-                          <Pencil size={14} /> Modifier la séance
-                        </button>
-                        <button
-                          onClick={() => {
-                            setHistoryMenuId(null);
-                            onDeleteWorkout(w.id);
-                          }}
-                          style={{ color: C.rust }}
-                          className="flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap w-full"
-                        >
-                          <Trash2 size={14} /> Supprimer la séance
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* détail — toutes les séries de la séance */}
-                  {open && (
-                    <div
-                      className="my-2 px-3.5 py-3.5"
-                      style={{ background: C.surface, borderRadius: 8 }}
-                    >
-                      <div className="flex flex-col">
-                        {w.exercises.map((e, i) => {
-                          const vol = e.sets.reduce(
-                            (s, set) => s + Number(set.weight) * Number(set.reps),
-                            0
-                          );
-                          const prevEx = w.exercises[i - 1];
-                          const sameSuperAsPrev =
-                            !!e.superset && !!prevEx && prevEx.superset === e.superset;
-                          return (
-                            <div
-                              key={i}
-                              className={
-                                i === 0 ? undefined : sameSuperAsPrev ? "pt-3.5" : "pt-3.5 mt-3.5"
-                              }
-                              style={{
-                                ...(i > 0 && !sameSuperAsPrev
-                                  ? { borderTop: `1px solid ${C.line}` }
-                                  : {}),
-                                ...(e.superset
-                                  ? { borderLeft: `2px solid ${C.amber}`, paddingLeft: 12 }
-                                  : {}),
-                              }}
-                            >
-                              <div
-                                style={{ color: C.text, fontWeight: 700, letterSpacing: "0.05em" }}
-                                className="text-[12px] uppercase"
-                              >
-                                {e.name}
-                              </div>
-                              <div
-                                style={{ color: C.textFaint }}
-                                className="il-num text-[11px] mt-0.5"
-                              >
-                                {e.sets.length} série{e.sets.length > 1 ? "s" : ""} ·{" "}
-                                {fmtVolume(vol)}
-                              </div>
-                              <div
-                                className="il-num text-[13px] mt-2 flex flex-col gap-1"
-                                style={{ color: C.textDim }}
-                              >
-                                {e.sets.map((set, si) => (
-                                  <div key={si} className="flex gap-3.5">
-                                    <span style={{ color: C.textFaint }}>
-                                      {String(si + 1).padStart(2, "0")}
-                                    </span>
-                                    <span style={{ color: C.text }}>
-                                      {fmtNum(Number(set.weight))} kg × {set.reps}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+            <p className="muted text-sm mb-5">
+              Les résultats de « {selected.name || "Séance libre"} » du{" "}
+              {fmtDate(selected.date)} seront supprimés.
+            </p>
+            {error && (
+              <p role="alert" className="error mb-3">
+                {error}
+              </p>
+            )}
+            <div className="flex gap-3">
+              <button
+                className="secondary flex-1"
+                disabled={busy}
+                onClick={() => setDeleting(false)}
+              >
+                Annuler
+              </button>
+              <button
+                className="primary flex-1"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const ok = await onDeleteWorkout(selected.id);
+                    if (ok !== false) {
+                      setDeleting(false);
+                      setExpandedHistory(null);
+                    } else setError("Suppression impossible. Réessaie.");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? "Suppression…" : "Supprimer"}
+              </button>
+            </div>
+          </Drawer>
+        )}
+      </section>
+    );
+  return (
+    <section>
+      <div className="section-heading mb-4">
+        <p className="muted text-sm">
+          {filtered.length} séance{filtered.length > 1 ? "s" : ""}
+        </p>
+        <button
+          className="secondary compact"
+          onClick={() => {
+            setDraft(filters);
+            setFilterOpen(true);
+          }}
+        >
+          <SlidersHorizontal size={16} /> Filtres
+          {applied ? ` (${applied})` : ""}
+        </button>
+      </div>
+      {applied > 0 && (
+        <button
+          className="text-button mb-4"
+          onClick={() => setFilters(EMPTY_FILTERS)}
+        >
+          Réinitialiser les filtres
+        </button>
+      )}
+      {workouts.length === 0 ? (
+        <div className="empty-state">
+          <h2>Ta première séance t’attend.</h2>
+          <p>Retrouve ici tes entraînements et leur progression.</p>
+          <button className="primary" onClick={onStartWorkout}>
+            <Plus size={17} /> Démarrer une séance
+          </button>
         </div>
-      ))}
-    </div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <h2>Aucune séance sur cette sélection.</h2>
+          <p>Essaie d’élargir la période ou de changer le type.</p>
+          <button
+            className="secondary"
+            onClick={() => setFilters(EMPTY_FILTERS)}
+          >
+            Effacer les filtres
+          </button>
+        </div>
+      ) : (
+        months.map((month) => (
+          <div key={month.key} className="mb-6">
+            <h2 className="eyebrow mb-2">{month.label}</h2>
+            {month.items.map((w) => (
+              <button
+                className="list-row"
+                key={w.id}
+                onClick={() => setExpandedHistory(w.id)}
+              >
+                <span>
+                  <strong>{w.name || "Séance libre"}</strong>
+                  <small>{fmtDate(w.date)}</small>
+                  <span className="il-num text-sm block mt-3">
+                    {fmtDur(w.durationMin)} ·{" "}
+                    {fmtVolume(volumeOfExercises(w.exercises))}
+                    {counts[w.id] > 0 ? ` · ${counts[w.id]} PR` : ""}
+                  </span>
+                </span>
+                <ArrowUpRight size={18} />
+              </button>
+            ))}
+          </div>
+        ))
+      )}
+      {filterOpen && (
+        <Drawer
+          title="Filtrer l’historique"
+          onClose={() => setFilterOpen(false)}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setFilters(draft);
+              setFilterOpen(false);
+            }}
+            className="flex flex-col gap-5"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <label className="field">
+                Du
+                <input
+                  className="il-input"
+                  type="date"
+                  value={draft.from}
+                  max={draft.to || undefined}
+                  onChange={(e) => setDraft({ ...draft, from: e.target.value })}
+                />
+              </label>
+              <label className="field">
+                Au
+                <input
+                  className="il-input"
+                  type="date"
+                  value={draft.to}
+                  min={draft.from || undefined}
+                  onChange={(e) => setDraft({ ...draft, to: e.target.value })}
+                />
+              </label>
+            </div>
+            <label className="field">
+              Type de séance
+              <select
+                className="il-input"
+                value={draft.type}
+                onChange={(e) => setDraft({ ...draft, type: e.target.value })}
+              >
+                <option value="all">Tous les types</option>
+                <option value="free">Séance libre</option>
+                <option value="template">Séance nommée</option>
+                <option value="superset">Avec superset</option>
+              </select>
+            </label>
+            <label className="field">
+              Séance
+              <select
+                className="il-input"
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              >
+                <option value="">Toutes les séances</option>
+                {[...new Set(workouts.map((w) => w.name).filter(Boolean))].map(
+                  (name) => (
+                    <option key={name}>{name}</option>
+                  ),
+                )}
+              </select>
+            </label>
+            <button
+              className="primary"
+              disabled={!!draft.from && !!draft.to && draft.from > draft.to}
+            >
+              Appliquer les filtres
+            </button>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => setDraft(EMPTY_FILTERS)}
+            >
+              Tout réinitialiser
+            </button>
+          </form>
+        </Drawer>
+      )}
+    </section>
   );
 }

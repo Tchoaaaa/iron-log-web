@@ -35,7 +35,7 @@ export default function PRScreen({ workouts }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div style={{ fontWeight: 700 }} className="text-lg mb-1">Records</div>
+      <div style={{ fontWeight: 700 }} className="text-lg mb-1">Progression et records</div>
       {loggedExerciseNames.length === 0 ? (
         <div style={{ color: C.textFaint }} className="text-sm text-center py-10">
           Enregistre une séance pour voir apparaître tes records ici.
@@ -43,6 +43,7 @@ export default function PRScreen({ workouts }) {
       ) : (
         <>
           <select
+            aria-label="Exercice à analyser"
             className="il-input rounded-xl px-3 py-2 text-sm"
             value={prExercise || ""}
             onChange={(e) => setPrExercise(e.target.value || null)}

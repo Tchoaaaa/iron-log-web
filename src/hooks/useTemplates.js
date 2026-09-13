@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as api from "../lib/api";
+import { templateEntry, replaceTemplateEntry } from "../lib/exercisePlan";
 import { REST_OPTIONS } from "../lib/constants";
 
 // Saved workout templates (reusable séances) and the draft being
@@ -46,25 +47,9 @@ export function useTemplates() {
 
   // Pushes an exercise (built by the exercise picker) into the draft — a
   // no-op if that exercise/pair is already in it.
-  const addExerciseToDraft = (entry) => {
-    setTemplateDraft((d) => {
-      if (entry.kind === "superset") {
-        const already = d.exercises.some(
-          (e) => e.pair && e.pair[0] === entry.nameA && e.pair[1] === entry.nameB
-        );
-        if (already) return d;
-        return {
-          ...d,
-          exercises: [
-            ...d.exercises,
-            { name: `${entry.nameA} + ${entry.nameB}`, sets: entry.count, restA: entry.restA, restB: entry.restB, pair: [entry.nameA, entry.nameB] },
-          ],
-        };
-      }
-      if (d.exercises.some((e) => e.name === entry.name)) return d;
-      return { ...d, exercises: [...d.exercises, { name: entry.name, sets: entry.count, rest: entry.rest }] };
-    });
-  };
+  const addExerciseToDraft = entry => setTemplateDraft(d => ({ ...d, exercises: [...d.exercises, templateEntry(entry)] }));
+  const editExerciseInDraft = (index, entry) => setTemplateDraft(d => ({ ...d, exercises: d.exercises.flatMap((ex, i) => i === index ? replaceTemplateEntry(ex, entry) : [ex]) }));
+  const removeExerciseAt = index => setTemplateDraft(d => ({ ...d, exercises: d.exercises.filter((_, i) => i !== index) }));
   const saveTemplateDraft = async ({ onError } = {}) => {
     const name = templateDraft.name.trim();
     if (!name || templateDraft.exercises.length === 0) return;
@@ -83,11 +68,13 @@ export function useTemplates() {
     }
   };
   const deleteTemplate = async (id, { onError } = {}) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
     try {
       await api.deleteTemplate(id);
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      return true;
     } catch (err) {
       onError?.(err.message || "Suppression impossible.");
+      return false;
     }
   };
 
@@ -104,6 +91,8 @@ export function useTemplates() {
     cycleDraftExerciseRest,
     cancelTemplateDraft,
     addExerciseToDraft,
+    editExerciseInDraft,
+    removeExerciseAt,
     saveTemplateDraft,
     deleteTemplate,
   };

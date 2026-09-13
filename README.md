@@ -43,9 +43,8 @@ authentification et stockage en ligne via **Supabase**.
    l'intégralité de [`supabase-schema.sql`](./supabase-schema.sql) et exécuter.
    (Fichier idempotent, ré-exécutable.)
 
-3. *(optionnel, pour tester vite)* Dans **Authentication → Providers → Email**,
-   désactiver « Confirm email » pour pouvoir se connecter immédiatement après
-   l'inscription. Sinon, confirmer via le lien reçu par email.
+3. Activer **Confirm email** dans les réglages d’authentification Supabase.
+   Installer le modèle et configurer les URL de retour selon [emails/README.md](./emails/README.md).
 
 ## Devenir administrateur
 
@@ -72,3 +71,21 @@ npm run build
 npm run lint
 npm run test
 ```
+
+
+## Évolutions de septembre 2026
+
+- Navigation Accueil / Séances / Suivi / Profil, sans topbar globale.
+- Accueil centré sur le démarrage et la reprise d’une séance.
+- Onboarding : âge, poids, taille et moyenne de pas, avec validation et brouillon local par utilisateur.
+- Profil dédié : données, photo, accès explicite à la caméra, déconnexion et repos automatique.
+- Même drawer pour ajouter ou modifier un exercice : Normal / Superset, séries, objectifs de répétitions et repos.
+- Dissocier un superset conserve les deux exercices. Les objectifs restent distincts des résultats.
+- Chronomètre avec pause/reprise et minuteur de repos indépendant ; reprise après rechargement.
+- Historique filtrable par dates, type et séance, avec pages de détail et accès aux performances.
+
+La préférence `auto_rest` est enregistrée dans les métadonnées personnelles Supabase Auth. Elle ne participe à aucune décision d’autorisation. Les mensurations restent dans les colonnes existantes de `profiles` ; aucune nouvelle migration n’est nécessaire si `supabase-schema.sql` a été appliqué. Une erreur de sauvegarde n’est plus masquée quand une colonne manque.
+
+### Vérifications
+
+`npm run test` et `npm run build` vérifient la logique et la compilation. Le script facultatif `scripts/verify-browser.mjs` utilise Playwright et Chrome avec des réponses Supabase simulées ; il ne crée pas de compte réel et n’envoie aucun e-mail. Lancer d’abord le serveur local sur le port 5174, puis exécuter le script avec Playwright disponible dans l’environnement (`PLAYWRIGHT_MODULE` permet d’indiquer son chemin). Le rapport détaillé est dans `VERIFICATION.md`.

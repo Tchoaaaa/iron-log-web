@@ -1,199 +1,268 @@
-import { X, Search, Plus, ChevronRight } from "lucide-react";
-import { C } from "../lib/theme";
+import { useState } from "react";
+import { ArrowLeft, Search, Plus } from "lucide-react";
+import Drawer from "./Drawer";
 import { REST_OPTIONS } from "../lib/constants";
 import { formatRest } from "../lib/format";
 
-// Wraps `useExercisePicker`'s wizard state with the two pieces of business
-// logic the picker itself doesn't know about:
-//   - `showRestStep`: whether this flow asks for rest time(s) inline
-//     (templates do; a running workout doesn't, and skips straight to
-//     finalizing once a set count is chosen)
-//   - `onFinish`: what to do with the finished pick — the caller turns the
-//     generic `{kind, name|nameA/nameB, count, rest|restA/restB}` descriptor
-//     into whatever shape it stores (an active-session entry vs. a template
-//     draft exercise)
-export default function ExercisePickerModal({ picker, contextLabel, showRestStep, onFinish, onCreateExercise }) {
-  const {
-    pickerQuery,
-    setPickerQuery,
-    filteredLibrary,
-    pickerStep,
-    pendingExerciseName,
-    pendingKind,
-    pendingNameA,
-    pendingNameB,
-    supersetStage,
-    close,
-    goToStep,
-    startSupersetBuild,
-    cancelSupersetBuild,
-    chooseExercise,
-    setPendingSetCount,
-    setPendingRestA,
-    buildEntry,
-  } = picker;
-
-  const finish = (entry) => {
-    onFinish(entry);
+export default function ExercisePickerModal({
+  picker,
+  onFinish,
+  onCreateExercise,
+}) {
+  const { plan, original, library, update, close } = picker;
+  const [choosing, setChoosing] = useState(null);
+  const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const superSet = plan.kind === "superset";
+  const filtered = library.filter((e) =>
+    e.name.toLocaleLowerCase("fr").includes(query.toLocaleLowerCase("fr")),
+  );
+  const choose = (name) => {
+    update(choosing, name);
+    if (choosing === "nameA") update("name", name);
+    setChoosing(null);
+    setQuery("");
+    setError("");
+  };
+  const finish = () => {
+    if (!plan.nameA || (superSet && !plan.nameB))
+      return setError("Choisis chaque exercice avant de continuer.");
+    if (superSet && plan.nameA === plan.nameB)
+      return setError("Choisis deux exercices différents pour le superset.");
+    const values = [
+      ...plan.targets.slice(0, plan.count),
+      ...(superSet ? plan.targetsB.slice(0, plan.count) : []),
+    ];
+    if (
+      values.some(
+        (v) =>
+          v !== "" &&
+          v != null &&
+          (!Number.isInteger(Number(v)) || Number(v) < 1 || Number(v) > 999),
+      )
+    )
+      return setError(
+        "Les répétitions doivent être des entiers entre 1 et 999, ou rester vides.",
+      );
+    if (
+      Array.isArray(original?.sets) &&
+      original.sets
+        .slice(plan.count)
+        .some((s) =>
+          Object.entries(s).some(
+            ([k, v]) => /^(weight|reps)/.test(k) && v !== "",
+          ),
+        )
+    )
+      return setError(
+        "Ces séries contiennent des résultats. Garde leur nombre pour préserver les données.",
+      );
+    const result = {
+      ...plan,
+      name: plan.nameA,
+      targets: plan.targets.slice(0, plan.count),
+      targetsB: plan.targetsB.slice(0, plan.count),
+    };
+    onFinish(result);
     close();
   };
-
-  const chooseSetCount = (count) => {
-    setPendingSetCount(count);
-    if (showRestStep) {
-      goToStep("rest");
-    } else {
-      finish(buildEntry({ count }));
+  const create = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const name = await onCreateExercise(query);
+      if (name) choose(name);
+      else setError("Impossible de créer cet exercice. Réessaie.");
+    } catch (e) {
+      setError(e.message || "Création impossible.");
+    } finally {
+      setBusy(false);
     }
   };
-
-  const chooseRest = (seconds) => {
-    if (pendingKind === "superset" && pickerStep === "rest") {
-      setPendingRestA(seconds);
-      goToStep("rest-b");
-      return;
-    }
-    if (pendingKind === "superset" && pickerStep === "rest-b") {
-      finish(buildEntry({ restB: seconds }));
-      return;
-    }
-    finish(buildEntry({ rest: seconds }));
-  };
-
-  const addCustomExercise = async (name) => {
-    const trimmed = await onCreateExercise(name);
-    if (trimmed) chooseExercise(trimmed);
-  };
-
   return (
-    <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={close}>
+    <Drawer
+      title={original ? "Modifier l’exercice" : "Ajouter un exercice"}
+      onClose={close}
+      busy={busy}
+    >
       <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: C.bg, borderTop: `1px solid ${C.line}`, maxHeight: "70vh" }}
-        className="w-full max-w-md rounded-t-3xl p-4 flex flex-col"
+        className="segmented mb-5"
+        role="group"
+        aria-label="Mode de l’exercice"
       >
-        {pickerStep === "search" ? (
-          <>
-            <div className="flex items-center justify-between mb-3">
-              <div style={{ fontWeight: 700 }}>
-                {supersetStage === "a" && "Superset · 1er exercice"}
-                {supersetStage === "b" && "Superset · 2e exercice"}
-                {!supersetStage && "Choisir un exercice"}
-              </div>
-              <X size={18} onClick={close} style={{ color: C.textFaint }} />
-            </div>
-            {contextLabel && !supersetStage && (
-              <div style={{ color: C.textFaint }} className="text-xs mb-2 -mt-2">Pour « {contextLabel} »</div>
-            )}
-            {supersetStage === "b" && (
-              <div className="flex items-center justify-between mb-2 -mt-1">
-                <span style={{ color: C.textDim }} className="text-xs">1er : {pendingNameA}</span>
-                <button onClick={cancelSupersetBuild} style={{ color: C.textFaint }} className="text-xs">Annuler le superset</button>
-              </div>
-            )}
-            <div className="relative mb-2">
-              <Search size={14} style={{ color: C.textFaint, position: "absolute", left: 10, top: 10 }} />
-              <input
-                autoFocus
-                className="il-input w-full rounded-xl pl-8 pr-3 py-2 text-sm"
-                placeholder="Rechercher ou créer un exercice…"
-                value={pickerQuery}
-                onChange={(e) => setPickerQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && filteredLibrary.length === 0 && pickerQuery.trim()) {
-                    addCustomExercise(pickerQuery);
-                  }
-                }}
-              />
-            </div>
-            {!supersetStage && !pickerQuery.trim() && (
+        {["single", "superset"].map((kind) => (
+          <button
+            key={kind}
+            aria-pressed={plan.kind === kind}
+            onClick={() => {
+              update("kind", kind);
+              if (kind === "single" && choosing === "nameB") setChoosing(null);
+            }}
+          >
+            {kind === "single" ? "Normal" : "Superset"}
+          </button>
+        ))}
+      </div>
+      {original &&
+        (original.pair || original.kind === "superset") &&
+        !superSet && (
+          <p className="muted text-sm mb-4">
+            Les deux exercices seront conservés séparément.
+          </p>
+        )}
+      {choosing ? (
+        <div className="flex flex-col gap-3">
+          <button
+            className="text-button justify-start"
+            onClick={() => setChoosing(null)}
+          >
+            <ArrowLeft size={16} /> Réglages de l’exercice
+          </button>
+          <p className="text-sm font-semibold">
+            {choosing === "nameB" ? "Deuxième exercice" : "Choisir un exercice"}
+          </p>
+          <label className="relative">
+            <Search size={17} className="absolute left-3 top-3.5" />
+            <input
+              autoFocus
+              aria-label="Rechercher un exercice"
+              className="il-input w-full pl-10"
+              placeholder="Rechercher ou créer…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <div className="flex flex-col gap-1 max-h-72 overflow-auto">
+            {filtered.map((e) => (
               <button
-                onClick={startSupersetBuild}
-                style={{ background: C.surfaceRaised, color: C.steel }}
-                className="rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-1.5 mb-3"
+                className="exercise-option"
+                key={e.name}
+                onClick={() => choose(e.name)}
               >
-                <Plus size={14} /> Créer un superset (deux exos enchaînés)
+                <span>{e.name}</span>
+                <small className="muted">{e.category}</small>
               </button>
-            )}
-            <div className="overflow-y-auto flex flex-col gap-1">
-              {filteredLibrary.map((e) => (
-                <button
-                  key={e.name}
-                  onClick={() => chooseExercise(e.name)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-left"
-                  style={{ background: C.surface }}
-                >
-                  <span className="text-sm">{e.name}</span>
-                  <span style={{ color: C.textFaint }} className="text-xs">{e.category}</span>
-                </button>
-              ))}
-              {pickerQuery.trim() && filteredLibrary.length === 0 && (
-                <button
-                  onClick={() => addCustomExercise(pickerQuery)}
-                  style={{ color: C.amber, border: `1px dashed ${C.amber}` }}
-                  className="rounded-xl py-2.5 text-sm flex items-center justify-center gap-1.5"
-                >
-                  <Plus size={14} /> Créer « {pickerQuery.trim()} »
+            ))}
+            {query.trim() &&
+              !filtered.some(
+                (e) => e.name.toLowerCase() === query.trim().toLowerCase(),
+              ) && (
+                <button className="secondary" disabled={busy} onClick={create}>
+                  <Plus size={16} /> Créer « {query.trim()} »
                 </button>
               )}
-            </div>
-          </>
-        ) : pickerStep === "sets" ? (
-          <>
-            <div className="flex items-center gap-2 mb-1">
-              <ChevronRight size={16} style={{ color: C.textFaint, transform: "rotate(180deg)" }} onClick={() => goToStep("search")} />
-              <div style={{ fontWeight: 700 }}>
-                {pendingKind === "superset" ? `${pendingNameA} + ${pendingNameB}` : pendingExerciseName}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            {(superSet ? ["nameA", "nameB"] : ["nameA"]).map((field, i) => (
+              <button
+                className="exercise-option"
+                key={field}
+                onClick={() => setChoosing(field)}
+              >
+                <span>
+                  {superSet ? `${i + 1}. ` : ""}
+                  {plan[field] || "Choisir un exercice"}
+                </span>
+                <small className="muted">Changer</small>
+              </button>
+            ))}
+          </div>
+          <label className="field">
+            {superSet ? "Nombre de rounds" : "Nombre de séries"}
+            <select
+              className="il-input"
+              value={plan.count}
+              onChange={(e) => update("count", Number(e.target.value))}
+            >
+              {Array.from({ length: Math.max(12, plan.count) }, (_, i) => (
+                <option key={i} value={i + 1}>
+                  {i + 1}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <h3 className="font-semibold text-sm">
+              Répétitions prévues{" "}
+              <span className="muted font-normal">· facultatif</span>
+            </h3>
+            <p className="muted text-xs mt-1 mb-3">
+              Un objectif pour chaque série. Les résultats se saisissent pendant
+              la séance.
+            </p>
+            {superSet && (
+              <div className="grid grid-cols-[44px_1fr_1fr] gap-2 text-xs muted mb-2">
+                <span />
+                <span>{plan.nameA || "Exercice 1"}</span>
+                <span>{plan.nameB || "Exercice 2"}</span>
               </div>
-            </div>
-            <div style={{ color: C.textFaint }} className="text-sm mb-4">
-              {pendingKind === "superset" ? "Combien de rounds ?" : "Combien de séries ?"}
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => chooseSetCount(n)}
-                  style={{ background: n === 3 ? C.amber : C.surfaceRaised, color: C.text }}
-                  className="il-num py-3 rounded-xl text-base font-semibold flex items-center justify-center"
+            )}
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: plan.count }, (_, i) => (
+                <div
+                  key={i}
+                  className={`grid ${superSet ? "grid-cols-[44px_1fr_1fr]" : "grid-cols-[44px_1fr]"} items-center gap-2`}
                 >
-                  {n}
-                </button>
+                  <span className="il-num muted text-sm">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  {(superSet ? ["targets", "targetsB"] : ["targets"]).map(
+                    (field) => (
+                      <input
+                        key={field}
+                        className="il-input il-num"
+                        type="number"
+                        min="1"
+                        max="999"
+                        step="1"
+                        inputMode="numeric"
+                        aria-label={`Répétitions série ${i + 1}${superSet ? (field === "targets" ? " exercice 1" : " exercice 2") : ""}`}
+                        placeholder="Libre"
+                        value={plan[field][i] ?? ""}
+                        onChange={(e) => {
+                          const next = [...plan[field]];
+                          next[i] = e.target.value;
+                          update(field, next);
+                        }}
+                      />
+                    ),
+                  )}
+                </div>
               ))}
             </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 mb-1">
-              <ChevronRight
-                size={16}
-                style={{ color: C.textFaint, transform: "rotate(180deg)" }}
-                onClick={() => goToStep(pickerStep === "rest-b" ? "rest" : "sets")}
-              />
-              <div style={{ fontWeight: 700 }}>
-                {pendingKind === "superset" ? (pickerStep === "rest-b" ? pendingNameB : pendingNameA) : pendingExerciseName}
-              </div>
-            </div>
-            <div style={{ color: C.textFaint }} className="text-sm mb-4">
-              {pendingKind === "superset"
-                ? `Temps de repos après ${pickerStep === "rest-b" ? "cet exercice" : "le 1er exercice"} ?`
-                : "Temps de repos entre les séries ?"}
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {REST_OPTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => chooseRest(s)}
-                  style={{ background: s === 120 ? C.amber : C.surfaceRaised, color: C.text }}
-                  className="il-num py-3 rounded-xl text-sm font-semibold flex items-center justify-center"
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {(superSet ? ["restA", "restB"] : ["rest"]).map((field, i) => (
+              <label className="field" key={field}>
+                {superSet ? `Repos après exercice ${i + 1}` : "Temps de repos"}
+                <select
+                  className="il-input"
+                  value={plan[field]}
+                  onChange={(e) => update(field, Number(e.target.value))}
                 >
-                  {formatRest(s)}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+                  {[0, ...REST_OPTIONS].map((s) => (
+                    <option key={s} value={s}>
+                      {s === 0 ? "Sans repos" : formatRest(s)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+          <button className="primary" onClick={finish}>
+            {original ? "Enregistrer les modifications" : "Ajouter à la séance"}
+          </button>
+        </div>
+      )}
+      {error && (
+        <p role="alert" className="error mt-3">
+          {error}
+        </p>
+      )}
+    </Drawer>
   );
 }

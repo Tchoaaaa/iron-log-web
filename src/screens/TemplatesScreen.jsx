@@ -1,187 +1,251 @@
-import { Plus, X, Pencil, Trash2, Play, Timer } from "lucide-react";
-import { C } from "../lib/theme";
+import { useState } from "react";
+import { ArrowLeft, Plus, Pencil, Trash2, Play } from "lucide-react";
 import { formatRest } from "../lib/format";
 import { useExercisePicker } from "../hooks/useExercisePicker";
 import ExercisePickerModal from "../components/ExercisePickerModal";
-
-export default function TemplatesScreen({ templatesHook, libraryHook, onStartFromTemplate, onError }) {
-  const {
-    templates,
-    templateDraft,
-    openNewTemplate,
-    openEditTemplate,
-    setDraftName,
-    removeExerciseFromDraft,
-    adjustDraftExerciseSets,
-    cycleDraftExerciseRest,
-    cancelTemplateDraft,
-    addExerciseToDraft,
-    saveTemplateDraft,
-    deleteTemplate,
-  } = templatesHook;
-
+import Drawer from "../components/Drawer";
+export default function TemplatesScreen({
+  templatesHook: t,
+  libraryHook,
+  onStartFromTemplate,
+  onError,
+}) {
   const picker = useExercisePicker({ library: libraryHook.exercises });
-  const handleSave = () => saveTemplateDraft({ onError });
-  const handleDelete = (id) => deleteTemplate(id, { onError });
-
-  if (!templateDraft) {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between mb-1">
-          <div style={{ fontWeight: 700 }} className="text-lg">Mes séances</div>
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [remove, setRemove] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const draft = t.templateDraft;
+  const template = t.templates.find((x) => x.id === selected);
+  const add = () => {
+    setEditingIndex(null);
+    picker.open();
+  };
+  const finish = (plan) => {
+    if (editingIndex == null) t.addExerciseToDraft(plan);
+    else t.editExerciseInDraft(editingIndex, plan);
+  };
+  return (
+    <section className="flex flex-col gap-5">
+      {(draft || template) && (
+        <button
+          className="text-button justify-start"
+          onClick={() => {
+            if (draft) t.cancelTemplateDraft();
+            else setSelected(null);
+          }}
+        >
+          <ArrowLeft size={17} />{" "}
+          {draft ? "Annuler les modifications" : "Mes séances"}
+        </button>
+      )}
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">{draft ? "PRÉPARER" : "TON PROGRAMME"}</p>
+          <h1 className="page-title mt-2">
+            {draft
+              ? draft.id
+                ? "Modifier la séance"
+                : "Nouvelle séance"
+              : template
+                ? template.name
+                : "Séances"}
+          </h1>
+        </div>
+        {!draft && !template && (
           <button
-            onClick={openNewTemplate}
-            style={{ color: C.amber, border: `1px solid ${C.amber}` }}
-            className="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5"
+            className="icon-button"
+            aria-label="Créer une séance"
+            onClick={t.openNewTemplate}
           >
-            <Plus size={13} /> Créer
+            <Plus size={22} />
+          </button>
+        )}
+      </div>
+      {draft ? (
+        <>
+          <label className="field">
+            Nom de la séance
+            <input
+              autoFocus
+              className="il-input"
+              placeholder="Ex. Push, Jambes, Full body…"
+              value={draft.name}
+              onChange={(e) => t.setDraftName(e.target.value)}
+              maxLength={100}
+            />
+          </label>
+          {draft.exercises.length === 0 && (
+            <p className="muted text-sm py-5">
+              Ajoute les exercices qui composent cette séance.
+            </p>
+          )}
+          {draft.exercises.map((ex, i) => (
+            <article key={i} className="exercise-card">
+              <div className="flex gap-3 justify-between">
+                <div>
+                  <p className="eyebrow mb-2">
+                    {ex.pair
+                      ? "SUPERSET"
+                      : `EXERCICE ${String(i + 1).padStart(2, "0")}`}
+                  </p>
+                  <h2 className="font-semibold">{ex.name}</h2>
+                </div>
+                <button
+                  className="icon-button shrink-0"
+                  aria-label={`Modifier ${ex.name}`}
+                  onClick={() => {
+                    setEditingIndex(i);
+                    picker.open(ex);
+                  }}
+                >
+                  <Pencil size={16} />
+                </button>
+              </div>
+              <p className="muted text-sm mt-3">
+                {ex.sets} séries ·{" "}
+                {ex.pair
+                  ? `${formatRest(ex.restA) || "0 s"} / ${formatRest(ex.restB) || "0 s"}`
+                  : formatRest(ex.rest) || "Sans repos"}
+              </p>
+              <p className="il-num muted text-xs mt-2">
+                Reps :{" "}
+                {Array.from(
+                  { length: ex.sets },
+                  (_, j) => ex.targets?.[j] || "—",
+                ).join(" / ")}
+                {ex.pair &&
+                  ` · ${Array.from({ length: ex.sets }, (_, j) => ex.targetsB?.[j] || "—").join(" / ")}`}
+              </p>
+              <button
+                className="text-button text-xs mt-2"
+                onClick={() => t.removeExerciseAt(i)}
+              >
+                <Trash2 size={14} /> Retirer
+              </button>
+            </article>
+          ))}
+          <button className="secondary" onClick={add}>
+            <Plus size={17} /> Ajouter un exercice
+          </button>
+          <button
+            className="primary"
+            disabled={busy || !draft.name.trim() || !draft.exercises.length}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await t.saveTemplateDraft({ onError });
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? "Enregistrement…" : "Enregistrer la séance"}
+          </button>
+        </>
+      ) : template ? (
+        <>
+          <p className="muted text-sm">
+            {template.exercises.length} exercices ·{" "}
+            {template.exercises.reduce(
+              (n, ex) => n + ex.sets * (ex.pair ? 2 : 1),
+              0,
+            )}{" "}
+            séries
+          </p>
+          {template.exercises.map((ex, i) => (
+            <div className="list-row" key={i}>
+              <span>
+                <strong>{ex.name}</strong>
+                <small>
+                  {ex.sets} séries{ex.pair ? " · Superset" : ""}
+                </small>
+              </span>
+            </div>
+          ))}
+          <button
+            className="primary"
+            onClick={() => onStartFromTemplate(template)}
+          >
+            <Play size={17} /> Démarrer cette séance
+          </button>
+          <button
+            className="secondary"
+            onClick={() => t.openEditTemplate(template)}
+          >
+            <Pencil size={16} /> Modifier la séance
+          </button>
+          <button className="text-button" onClick={() => setRemove(template)}>
+            <Trash2 size={16} /> Supprimer la séance
+          </button>
+        </>
+      ) : t.templates.length ? (
+        t.templates.map((ex) => (
+          <button
+            className="list-row"
+            key={ex.id}
+            onClick={() => setSelected(ex.id)}
+          >
+            <span>
+              <strong>{ex.name}</strong>
+              <small>{ex.exercises.length} exercices</small>
+            </span>
+            <ArrowLeft size={17} className="rotate-180" />
+          </button>
+        ))
+      ) : (
+        <div className="empty-state">
+          <h2>Prépare ton prochain entraînement.</h2>
+          <p>
+            Crée une séance pour retrouver tes exercices, tes répétitions et tes
+            temps de repos.
+          </p>
+          <button className="primary" onClick={t.openNewTemplate}>
+            <Plus size={17} /> Créer ma première séance
           </button>
         </div>
-
-        {templates.length === 0 ? (
-          <div style={{ color: C.textFaint }} className="text-sm text-center py-10">
-            Crée une séance (ex. « Push », « Jambes ») pour la relancer en un tap.
-          </div>
-        ) : (
-          templates.map((t) => (
-            <div key={t.id} className="il-card rounded-2xl p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div style={{ fontWeight: 600 }} className="text-sm">{t.name}</div>
-                <div className="flex items-center gap-3">
-                  <Pencil size={14} style={{ color: C.textFaint }} onClick={() => openEditTemplate(t)} />
-                  <Trash2 size={14} style={{ color: C.textFaint }} onClick={() => handleDelete(t.id)} />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {t.exercises.map((ex) => (
-                  <span key={ex.name} style={{ background: C.surfaceRaised, color: C.textDim }} className="text-xs px-2 py-0.5 rounded">
-                    {ex.name} <span className="il-num">
-                      ×{ex.sets}
-                      {ex.pair
-                        ? ` · ${formatRest(ex.restA)}/${formatRest(ex.restB)}`
-                        : ex.rest ? ` · ${formatRest(ex.rest)}` : ""}
-                    </span>
-                  </span>
-                ))}
-              </div>
-              <button
-                onClick={() => onStartFromTemplate(t)}
-                style={{ background: C.amber, color: C.signalInk }}
-                className="w-full py-2 rounded-full font-semibold text-sm flex items-center justify-center gap-1.5"
-              >
-                <Play size={13} fill={C.text} /> Démarrer cette séance
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-3 pb-2">
-      <div className="flex items-center justify-between">
-        <div style={{ fontWeight: 700 }} className="text-lg">
-          {templateDraft.id ? "Modifier la séance" : "Nouvelle séance"}
-        </div>
-        <button onClick={cancelTemplateDraft} style={{ color: C.textFaint }} className="text-xs flex items-center gap-1">
-          <X size={13} /> Annuler
-        </button>
-      </div>
-
-      <input
-        autoFocus
-        className="il-input rounded-xl px-3 py-2 text-sm"
-        placeholder="Nom de la séance (ex. Push, Jambes, Full Body…)"
-        value={templateDraft.name}
-        onChange={(e) => setDraftName(e.target.value)}
-      />
-
-      <div className="flex flex-col gap-1.5">
-        {templateDraft.exercises.length === 0 && (
-          <div style={{ color: C.textFaint }} className="text-sm il-card rounded-2xl p-4 text-center">
-            Ajoute les exercices qui composent cette séance.
-          </div>
-        )}
-        {templateDraft.exercises.map((ex, i) => (
-          <div key={ex.name} className="il-card rounded-2xl px-3 py-2 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm flex-1 min-w-0">
-                <span className="il-num" style={{ color: C.textFaint }}>{i + 1}.</span> {ex.name}
-                {!ex.pair && (
-                  <button
-                    onClick={() => cycleDraftExerciseRest(ex.name)}
-                    style={{ color: C.steel }}
-                    className="il-num text-xs ml-1.5 inline-flex items-center gap-1 align-middle"
-                  >
-                    <Timer size={11} /> {formatRest(ex.rest)}
-                  </button>
-                )}
-              </span>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={() => adjustDraftExerciseSets(ex.name, -1)}
-                  style={{ background: C.surfaceRaised, color: C.text }}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold"
-                >
-                  −
-                </button>
-                <span className="il-num text-sm w-14 text-center" style={{ color: C.textDim }}>
-                  {ex.sets} série{ex.sets > 1 ? "s" : ""}
-                </span>
-                <button
-                  onClick={() => adjustDraftExerciseSets(ex.name, 1)}
-                  style={{ background: C.surfaceRaised, color: C.text }}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold"
-                >
-                  +
-                </button>
-                <Trash2 size={14} style={{ color: C.textFaint }} onClick={() => removeExerciseFromDraft(ex.name)} />
-              </div>
-            </div>
-            {ex.pair && (
-              <div className="flex flex-wrap gap-x-3 gap-y-1 pl-4">
-                <button onClick={() => cycleDraftExerciseRest(ex.name, "A")} style={{ color: C.steel }} className="il-num text-xs inline-flex items-center gap-1 align-middle">
-                  {ex.pair[0]} · <Timer size={11} /> {formatRest(ex.restA)}
-                </button>
-                <button onClick={() => cycleDraftExerciseRest(ex.name, "B")} style={{ color: C.steel }} className="il-num text-xs inline-flex items-center gap-1 align-middle">
-                  {ex.pair[1]} · <Timer size={11} /> {formatRest(ex.restB)}
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <button
-        onClick={picker.open}
-        style={{ border: `1px dashed ${C.line}`, color: C.textDim }}
-        className="rounded-2xl p-3 text-sm flex items-center justify-center gap-2"
-      >
-        <Plus size={15} /> Ajouter un exercice
-      </button>
-
-      <button
-        onClick={handleSave}
-        disabled={!templateDraft.name.trim() || templateDraft.exercises.length === 0}
-        style={{
-          background: templateDraft.name.trim() && templateDraft.exercises.length > 0 ? C.amber : C.surfaceRaised,
-          color: templateDraft.name.trim() && templateDraft.exercises.length > 0 ? C.text : C.textFaint,
-        }}
-        className="w-full py-3 rounded-full font-semibold mt-1"
-      >
-        Enregistrer la séance
-      </button>
-
+      )}
       {picker.showPicker && (
         <ExercisePickerModal
           picker={picker}
-          contextLabel={templateDraft?.name || "cette séance"}
-          showRestStep
-          onFinish={addExerciseToDraft}
+          onFinish={finish}
           onCreateExercise={libraryHook.addCustomExercise}
         />
       )}
-    </div>
+      {remove && (
+        <Drawer
+          title="Supprimer cette séance ?"
+          onClose={() => setRemove(null)}
+          busy={busy}
+        >
+          <p className="muted text-sm mb-5">
+            « {remove.name} » sera retirée de tes séances enregistrées.
+            L’historique des entraînements reste conservé.
+          </p>
+          <div className="flex gap-3">
+            <button
+              className="secondary flex-1"
+              onClick={() => setRemove(null)}
+            >
+              Annuler
+            </button>
+            <button
+              className="primary flex-1"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  if (await t.deleteTemplate(remove.id, { onError })) setRemove(null);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Supprimer
+            </button>
+          </div>
+        </Drawer>
+      )}
+    </section>
   );
 }

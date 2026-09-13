@@ -7,12 +7,13 @@ import { C } from "../lib/theme";
 export default function NavBtn({ id, icon: Icon, label, active, onSelect }) {
   return (
     <button
+      aria-current={active ? "page" : undefined}
       onClick={() => onSelect(id)}
-      style={{ color: active ? C.amber : C.textFaint }}
+      style={{ color: active ? C.text : C.textDim }}
       className="flex flex-col items-center gap-1 py-2 flex-1"
     >
       <Icon size={20} strokeWidth={active ? 2.4 : 1.8} />
-      <span className="text-xs" style={{ fontWeight: active ? 600 : 400 }}>{label}</span>
+      <span className="text-xs" style={{ fontWeight: active ? 700 : 400 }}>{label}</span>
     </button>
   );
 }
