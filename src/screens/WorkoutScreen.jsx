@@ -4,6 +4,8 @@ import {
   Plus,
   Pencil,
   Check,
+  ChevronDown,
+  ChevronUp,
   Pause,
   Play,
   Timer,
@@ -159,6 +161,14 @@ export default function WorkoutScreen({
   const [discard, setDiscard] = useState(false);
   const [remove, setRemove] = useState(null);
   const [manualRest, setManualRest] = useState(90);
+  const [collapsed, setCollapsed] = useState(() => new Set());
+  const toggleCollapsed = (id) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const total = active.entries.reduce(
     (n, ex) => n + ex.sets.length * (ex.kind === "superset" ? 2 : 1),
     0,
@@ -216,13 +226,41 @@ export default function WorkoutScreen({
               { label: entry.nameB, suffix: "B", rest: entry.restB },
             ]
           : [{ label: entry.name, suffix: "", rest: entry.rest }];
+        const isCollapsed = collapsed.has(entry.id);
+        const entryTotal = entry.sets.length * (superSet ? 2 : 1);
+        const entryDone = entry.sets.reduce(
+          (v, s) =>
+            v +
+            (superSet
+              ? Number(!!s.doneA) + Number(!!s.doneB)
+              : Number(!!s.done)),
+          0,
+        );
         return (
           <article className="exercise-card" key={entry.id}>
             <div className="flex justify-between items-center mb-4">
-              <p className="eyebrow">
-                {superSet ? "SUPERSET" : "EXERCICE"} /{" "}
-                {String(index + 1).padStart(2, "0")}
-              </p>
+              <button
+                type="button"
+                className="exercise-toggle flex-1"
+                onClick={() => toggleCollapsed(entry.id)}
+                aria-expanded={!isCollapsed}
+                aria-label={`${isCollapsed ? "Déplier" : "Replier"} ${entry.name}`}
+              >
+                <p className="eyebrow">
+                  {superSet ? "SUPERSET" : "EXERCICE"} /{" "}
+                  {String(index + 1).padStart(2, "0")}
+                </p>
+                <span className="flex items-center gap-2">
+                  <span className="il-num muted text-xs">
+                    {entryDone} / {entryTotal}
+                  </span>
+                  {isCollapsed ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronUp size={16} />
+                  )}
+                </span>
+              </button>
               {!lockedExercises && (
                 <button
                   className="icon-button"
@@ -249,15 +287,17 @@ export default function WorkoutScreen({
                         ? "Sans repos"
                         : `${fmtRestMMSS(sub.rest ?? 90)} de repos`}
                     </span>
-                    {timing && sub.rest !== 0 && (
+                    {!isCollapsed && timing && sub.rest !== 0 && (
                       <button
                         className="text-button text-xs"
                         onClick={() => a.startRest(sub.rest ?? 90, sub.label)}
                       >
-                        <Timer size={14} /> Repos
+                        Repos
                       </button>
                     )}
                   </div>
+                  {!isCollapsed && (
+                    <>
                   <div
                     className="grid mt-4 mb-2 text-[10px] muted uppercase"
                     style={{ gridTemplateColumns: SET_GRID, gap: 6 }}
@@ -266,7 +306,6 @@ export default function WorkoutScreen({
                     <span className="text-center">Préc.</span>
                     <span className="text-center">Kg</span>
                     <span className="text-center">Reps</span>
-                    <span className="text-center">Fait</span>
                   </div>
                   <div className="flex flex-col gap-2">
                     {entry.sets.map((set, i) => {
@@ -283,69 +322,6 @@ export default function WorkoutScreen({
                             className={`grid items-center set-row ${validated ? "completed" : ""}`}
                             style={{ gridTemplateColumns: SET_GRID, gap: 6 }}
                           >
-                            <span className="il-num muted text-xs text-center">
-                              {i + 1}
-                            </span>
-                            <span className="il-num muted text-[10px] text-center">
-                              {previous
-                                ? `${previous.weight}×${previous.reps}`
-                                : "—"}
-                            </span>
-                            <input
-                              className="il-input il-num w-full text-center"
-                              aria-label={`${sub.label}, série ${i + 1}, charge en kg`}
-                              type="number"
-                              min="0"
-                              step="any"
-                              inputMode="decimal"
-                              placeholder={
-                                previous ? String(previous.weight) : "0"
-                              }
-                              value={set["weight" + sub.suffix]}
-                              onChange={(e) => {
-                                updateSet(
-                                  entry.id,
-                                  i,
-                                  "weight" + sub.suffix,
-                                  e.target.value,
-                                );
-                                if (validated)
-                                  updateSet(
-                                    entry.id,
-                                    i,
-                                    "done" + sub.suffix,
-                                    false,
-                                  );
-                              }}
-                            />
-                            <input
-                              className="il-input il-num w-full text-center"
-                              aria-label={`${sub.label}, série ${i + 1}, répétitions réalisées`}
-                              type="number"
-                              min="1"
-                              step="1"
-                              inputMode="numeric"
-                              placeholder={
-                                target ||
-                                (previous ? String(previous.reps) : "—")
-                              }
-                              value={set["reps" + sub.suffix]}
-                              onChange={(e) => {
-                                updateSet(
-                                  entry.id,
-                                  i,
-                                  "reps" + sub.suffix,
-                                  e.target.value,
-                                );
-                                if (validated)
-                                  updateSet(
-                                    entry.id,
-                                    i,
-                                    "done" + sub.suffix,
-                                    false,
-                                  );
-                              }}
-                            />
                             <button
                               className={`set-check ${validated ? "checked" : ""}`}
                               disabled={!validated && !canValidate}
@@ -366,8 +342,92 @@ export default function WorkoutScreen({
                                 )
                               }
                             >
-                              {validated ? <Check size={16} /> : <span />}
+                              {validated ? <Check size={16} /> : <span>{i + 1}</span>}
                             </button>
+                            <span className="il-num muted text-[10px] text-center">
+                              {previous
+                                ? `${previous.weight}×${previous.reps}`
+                                : "—"}
+                            </span>
+                            <input
+                              className="il-input il-num w-full text-center"
+                              aria-label={`${sub.label}, série ${i + 1}, charge en kg`}
+                              type="number"
+                              min="0"
+                              step="any"
+                              inputMode="decimal"
+                              placeholder={
+                                previous ? String(previous.weight) : "0"
+                              }
+                              value={set["weight" + sub.suffix]}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                updateSet(
+                                  entry.id,
+                                  i,
+                                  "weight" + sub.suffix,
+                                  value,
+                                );
+                                if (validated) {
+                                  updateSet(
+                                    entry.id,
+                                    i,
+                                    "done" + sub.suffix,
+                                    false,
+                                  );
+                                } else if (
+                                  validSet(value, set["reps" + sub.suffix])
+                                ) {
+                                  a.completeSet(
+                                    entry.id,
+                                    i,
+                                    "done" + sub.suffix,
+                                    sub.rest,
+                                    sub.label,
+                                  );
+                                }
+                              }}
+                            />
+                            <input
+                              className="il-input il-num w-full text-center"
+                              aria-label={`${sub.label}, série ${i + 1}, répétitions réalisées`}
+                              type="number"
+                              min="1"
+                              step="1"
+                              inputMode="numeric"
+                              placeholder={
+                                target ||
+                                (previous ? String(previous.reps) : "—")
+                              }
+                              value={set["reps" + sub.suffix]}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                updateSet(
+                                  entry.id,
+                                  i,
+                                  "reps" + sub.suffix,
+                                  value,
+                                );
+                                if (validated) {
+                                  updateSet(
+                                    entry.id,
+                                    i,
+                                    "done" + sub.suffix,
+                                    false,
+                                  );
+                                } else if (
+                                  validSet(set["weight" + sub.suffix], value)
+                                ) {
+                                  a.completeSet(
+                                    entry.id,
+                                    i,
+                                    "done" + sub.suffix,
+                                    sub.rest,
+                                    sub.label,
+                                  );
+                                }
+                              }}
+                            />
                           </div>
                           {target && (
                             <p className="muted text-[10px] text-right mt-1 pr-10">
@@ -385,10 +445,12 @@ export default function WorkoutScreen({
                       libraryHook.persistExerciseNote(sub.label, v)
                     }
                   />
+                    </>
+                  )}
                 </div>
               ))}
             </div>
-            {!lockedExercises && (
+            {!isCollapsed && !lockedExercises && (
               <button
                 className="text-button text-xs mt-3"
                 onClick={() => setRemove(entry)}

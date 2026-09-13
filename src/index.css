@@ -379,6 +379,19 @@ button[aria-current="page"] {
   border: 1px solid var(--c-line);
   border-radius: 16px;
 }
+.exercise-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  color: var(--c-text);
+  min-height: 44px;
+}
+.exercise-toggle svg {
+  color: var(--c-text-dim);
+  flex-shrink: 0;
+}
 .timer-panel,
 .rest-panel {
   padding: 18px;
@@ -405,10 +418,15 @@ button[aria-current="page"] {
   place-items: center;
 }
 .set-check span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
   border-radius: 50%;
   border: 1.5px solid var(--c-control-border);
+  font: 11px "Space Mono", monospace;
+  color: var(--c-text-dim);
 }
 .set-check.checked svg {
   box-sizing: content-box;
