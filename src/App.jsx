@@ -219,6 +219,8 @@ function GymApp({ session }) {
                   setPerformanceExercise(null);
                   setExpandedHistory(id);
                 }}
+                onFinishWorkout={finish}
+                finishing={activeSession.finishing}
               />
             )}
             {tab === "workout" && activeSession.active && (

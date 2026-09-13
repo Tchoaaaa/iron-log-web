@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { ArrowUpRight, Check, Play, UserRound } from "lucide-react";
 import WeeklyOverview from "../components/WeeklyOverview";
+import Drawer from "../components/Drawer";
 import { fmtDate, fmtDur } from "../lib/format";
 export default function HomeScreen({
   weekly,
@@ -18,7 +20,18 @@ export default function HomeScreen({
   onResume,
   onStartFromTemplate,
   onJumpToWorkoutInHistory,
+  onFinishWorkout,
+  finishing,
 }) {
+  const [confirmFinish, setConfirmFinish] = useState(false);
+  const confirmActiveFinish = async () => {
+    if (finishing) return;
+    try {
+      await onFinishWorkout();
+    } finally {
+      setConfirmFinish(false);
+    }
+  };
   const todayRow = weekly.rows.find(row => row.date === weekly.today);
   const todayActive = todayRow?.status !== "moved" ? todayRow : null;
   const todayTemplate = todayActive?.template || null;
@@ -78,10 +91,46 @@ export default function HomeScreen({
             <Play size={18} /> {ctaLabel}
           </button>
         )}
+        {active && (
+          <button
+            className="text-button muted w-full mt-2"
+            disabled={finishing}
+            onClick={active.editId ? onFinishWorkout : () => setConfirmFinish(true)}
+          >
+            {active.editId ? "Enregistrer les modifications" : "Terminer la séance"}
+          </button>
+        )}
         {!active && !todayDone && <button className="text-button muted w-full mt-2" onClick={onStartWorkout}>Démarrer une séance libre</button>}
         {(active || (todayTemplate && !todayDone)) && <button className="text-button muted w-full mt-1" onClick={onGoToTemplates}>Choisir une autre séance <ArrowUpRight size={16} /></button>}
       </section>
       <WeeklyOverview weekly={weekly} onEdit={onEditWeek} onSelect={onSelectWeekDay} />
+      {confirmFinish && (
+        <Drawer
+          title="Terminer la séance ?"
+          onClose={() => setConfirmFinish(false)}
+          busy={finishing}
+        >
+          <p className="muted text-sm mb-5">
+            Vérifie que tu as bien saisi toutes tes séries avant de terminer.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              className="secondary"
+              disabled={finishing}
+              onClick={() => setConfirmFinish(false)}
+            >
+              Continuer la séance
+            </button>
+            <button
+              className="primary"
+              disabled={finishing}
+              onClick={confirmActiveFinish}
+            >
+              {finishing ? "Enregistrement…" : "Oui, terminer la séance"}
+            </button>
+          </div>
+        </Drawer>
+      )}
       <div>
         <div className="section-heading">
           <h2>Ce mois-ci</h2>
