@@ -97,7 +97,7 @@ export default function BottomBar({ tab, active, templateDraft, finishing, onFin
     >
       <NavBtn id="home" icon={Home} label="Accueil" active={tab === "home"} onSelect={onSelectTab} />
       <NavBtn id="templates" icon={ClipboardList} label="Séances" active={tab === "templates"} onSelect={onSelectTab} />
-      <NavBtn id="history" icon={ChartNoAxesCombined} label="Suivi" active={tab === "history"} onSelect={onSelectTab} />
+      <NavBtn id="performance" icon={ChartNoAxesCombined} label="Performance" active={tab === "performance"} onSelect={onSelectTab} />
       <NavBtn id="profile" icon={UserRound} label="Profil" active={tab === "profile"} onSelect={onSelectTab} />
     </div>
   );

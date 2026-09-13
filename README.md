@@ -75,7 +75,7 @@ npm run test
 
 ## Évolutions de septembre 2026
 
-- Navigation Accueil / Séances / Suivi / Profil, sans topbar globale.
+- Navigation Accueil / Séances / Performance / Profil, sans topbar globale.
 - Accueil centré sur le démarrage et la reprise d’une séance.
 - Onboarding : âge, poids, taille et moyenne de pas, avec validation et brouillon local par utilisateur.
 - Profil dédié : données, photo, accès explicite à la caméra, déconnexion et repos automatique.
@@ -93,3 +93,7 @@ La préférence `auto_rest` est enregistrée dans les métadonnées personnelles
 ## Planification hebdomadaire
 
 L’accueil propose une semaine type récurrente, des ajustements pour la semaine en cours et un démarrage de la séance du jour. Stockage dans les métadonnées personnelles Supabase Auth, sans migration SQL. Voir [WEEKLY_PLANNING.md](WEEKLY_PLANNING.md) pour les règles et les vérifications.
+
+## Espace Performance
+
+Aperçu, Historique et Records sont réunis sous Performance. Les indicateurs et courbes sont dérivés de l’historique existant. Voir [PERFORMANCE.md](PERFORMANCE.md) pour les calculs, la navigation et les tests.

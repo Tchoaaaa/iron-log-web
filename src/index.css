@@ -528,3 +528,98 @@ progress::-webkit-progress-value {
 .week-select { width: 100%; min-width: 0; padding: 12px 8px; border: 1px solid var(--c-control-border); border-radius: 9px; background: var(--c-surface); color: var(--c-text); font-size: 15px; }
 .week-select:disabled { color: var(--c-text-dim); opacity: .75; }
 .week-empty-library { border-block: 1px solid var(--c-line); padding: 16px 0; margin: 16px 0; }
+
+/* Performance: existing mineral tokens, compact typography and hairlines. */
+.performance-tabs { display:flex; border-bottom:1px solid var(--c-line); margin-bottom:24px; }
+.performance-tabs button { flex:1; min-height:44px; font-size:13px; color:var(--c-text-dim); border-bottom:2px solid transparent; margin-bottom:-1px; }
+.performance-tabs button[aria-selected="true"] { color:var(--c-accent-text); border-color:var(--c-signal); font-weight:600; }
+.performance-panel:focus { outline:none; }
+.performance-panel:focus-visible { outline:2px solid var(--c-accent-text); outline-offset:4px; }
+.performance-section { padding:24px 0; border-bottom:1px solid var(--c-line); }
+.performance-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:16px; }
+.performance-stats > div { display:flex; flex-direction:column; gap:5px; padding:0 8px; border-right:1px solid var(--c-line); min-width:0; }
+.performance-stats > div:first-child { padding-left:0; }
+.performance-stats > div:last-child { padding-right:0; border:0; }
+.performance-stats strong { font-size:clamp(14px,4vw,18px); overflow-wrap:anywhere; line-height:1.3; }
+.performance-stats small { font-size:10px; color:var(--c-text-dim); }
+.performance-stats > div > span { font-size:11px; }
+.performance-change { color:var(--c-accent-text); }
+.performance-exercise-row { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(30px,.65fr) auto 15px; align-items:center; gap:8px; width:100%; text-align:left; padding:14px 0; border-bottom:1px solid var(--c-line); }
+.performance-exercise-row:last-child { border-bottom:0; }
+.performance-exercise-row strong { display:block; font-size:12px; font-weight:500; }
+.performance-exercise-row small { display:block; font-size:10px; color:var(--c-text-dim); margin-top:3px; }
+.performance-result { text-align:right; font-size:11px; white-space:nowrap; }
+.performance-result > span { display:block; margin-top:3px; }
+.performance-spark { min-width:0; }
+.performance-chart { margin-top:20px; }
+.performance-chart svg { width:100%; height:140px; overflow:visible; }
+.performance-spark svg { width:100%; height:34px; }
+.chart-guide { stroke:var(--c-line); stroke-width:.7; }
+.chart-line { stroke:var(--c-signal); stroke-width:2; vector-effect:non-scaling-stroke; }
+.chart-bar { fill:var(--c-signal); }
+.chart-caption { display:flex; justify-content:space-between; gap:8px; margin-top:10px; font-size:9px; color:var(--c-text-dim); }
+.performance-method { font-size:11px; color:var(--c-text-dim); padding:24px 0; }
+.performance-method summary { cursor:pointer; min-height:30px; }
+.performance-method p { margin-top:12px; line-height:1.6; }
+.detail-stats { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:24px; padding-bottom:24px; border-bottom:1px solid var(--c-line); }
+@media (max-width:360px) {
+  .performance-exercise-row { grid-template-columns:minmax(0,1fr) 38px auto 12px; gap:5px; }
+  .performance-stats > div { padding:0 5px; }
+}
+
+.performance-overview .segmented, .exercise-performance .segmented { border:0; border-radius:9px; padding:3px; gap:2px; }
+.performance-overview .segmented button, .exercise-performance .segmented button { padding:8px 4px; min-height:36px; font-size:12px; border-radius:7px; white-space:nowrap; }
+.performance-overview .segmented button[aria-pressed="true"], .exercise-performance .segmented button[aria-pressed="true"] { background:var(--c-surface); color:var(--c-text); box-shadow:0 0 0 1px var(--c-line); }
+
+.chart-axis-label { fill:var(--c-text-dim); font-size:10px; font-family:inherit; }
+
+/* Fixed columns and shared text rows keep the overview aligned as values change. */
+.performance-overview .performance-stats {
+  grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,.7fr) minmax(0,1.35fr);
+  margin-top:20px;
+}
+.performance-overview .performance-stats > div {
+  display:grid;
+  grid-template-rows:26px 16px 16px;
+  row-gap:5px;
+  align-items:baseline;
+  padding:0 10px;
+}
+.performance-overview .performance-stats > div:first-child { padding-left:0; }
+.performance-overview .performance-stats > div:last-child { padding-right:0; }
+.performance-overview .performance-stats strong {
+  font-size:clamp(16px,4.6vw,20px);
+  line-height:26px;
+  letter-spacing:-.035em;
+  white-space:nowrap;
+  overflow-wrap:normal;
+  font-variant-numeric:tabular-nums;
+}
+.performance-overview .performance-stats small {
+  font-size:clamp(9px,2.6vw,11px);
+  line-height:16px;
+  white-space:nowrap;
+}
+.performance-overview .performance-stats > div > span { font-size:11px; line-height:16px; white-space:nowrap; }
+@media (max-width:360px) {
+  .performance-overview .performance-stats > div { padding-right:7px; padding-left:7px; }
+  .performance-overview .performance-stats > div:first-child { padding-left:0; }
+  .performance-overview .performance-stats > div:last-child { padding-right:0; }
+}
+
+.record-row { display:grid; grid-template-columns:minmax(0,1fr) 72px 80px 14px; align-items:center; gap:8px; width:100%; min-height:54px; padding:15px 0; border-bottom:1px solid var(--c-line); text-align:left; }
+.record-name { min-width:0; font-size:12px; font-weight:500; line-height:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.record-result { font-size:11px; font-weight:500; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.record-date { font-size:10px; color:var(--c-text-dim); white-space:nowrap; text-align:right; }
+.record-row > svg { color:var(--c-text-dim); }
+@media (max-width:360px) {
+  .record-row { grid-template-columns:minmax(0,1fr) 64px 72px 12px; gap:5px; }
+  .record-name { font-size:11px; }
+  .record-result { font-size:10px; }
+  .record-date { font-size:9px; }
+}
+
+.records-filter { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:12px; }
+.records-filter .field { flex:1; max-width:230px; min-width:0; }
+.records-filter select { font-size:16px; }
+.records-filter > p { padding-bottom:13px; white-space:nowrap; }

@@ -86,7 +86,7 @@ export default function HomeScreen({
         <div className="section-heading">
           <h2>Ce mois-ci</h2>
           <button className="text-button" onClick={onGoToHistory}>
-            Voir le suivi <ArrowUpRight size={15} />
+            Voir Performance <ArrowUpRight size={15} />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-5 mt-3">
@@ -147,7 +147,7 @@ export default function HomeScreen({
         ) : (
           <p className="muted text-sm mt-3">
             Ton historique commence avec ta première séance. Tout sera réuni
-            dans Suivi.
+            dans Performance.
           </p>
         )}
       </div>

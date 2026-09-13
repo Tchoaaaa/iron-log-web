@@ -5,8 +5,7 @@ import { EXERCISE_LIBRARY } from "./data/exercises";
 import { EMPTY_FILTERS } from "./lib/historyFilters";
 import AuthScreen from "./screens/AuthScreen";
 import AdminDashboard from "./screens/AdminDashboard";
-import HistoryScreen from "./screens/HistoryScreen";
-import PRScreen from "./screens/PRScreen";
+import PerformanceScreen from "./screens/PerformanceScreen";
 import HomeScreen from "./screens/HomeScreen";
 import WeekSetupScreen from "./screens/WeekSetupScreen";
 import PlannedSessionDrawer from "./components/PlannedSessionDrawer";
@@ -54,8 +53,12 @@ function GymApp({ session }) {
   const [dataError, setDataError] = useState("");
   const [tab, setTab] = useState("home");
   const [expandedHistory, setExpandedHistory] = useState(null);
-  const [historyOrigin, setHistoryOrigin] = useState("history");
-  const [historyView, setHistoryView] = useState("history");
+  const [historyOrigin, setHistoryOrigin] = useState("performance");
+  const [performanceView, setPerformanceView] = useState("overview");
+  const [performancePeriod, setPerformancePeriod] = useState("week");
+  const [performanceExercise, setPerformanceExercise] = useState(null);
+  const [performanceWeeks, setPerformanceWeeks] = useState(8);
+  const [recordMuscle, setRecordMuscle] = useState("");
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [activeNotice, setActiveNotice] = useState(false);
   const [confirmed, setConfirmed] = useState(
@@ -120,12 +123,16 @@ function GymApp({ session }) {
       replaceWorkout: workoutsHook.replaceWorkout,
       onError: setDataError,
       onEmpty: () => setTab("home"),
-      onEditSaved: () => setTab("history"),
+      onEditSaved: () => setTab("performance"),
       onRecorded: weekly.recordCompletion,
     });
   const selectTab = (next) => {
     setTab(next);
-    if (next === "history") setHistoryOrigin("history");
+    if (next === "performance") {
+      setHistoryOrigin("performance");
+      setExpandedHistory(null);
+      setPerformanceExercise(null);
+    }
     window.scrollTo({ top: 0 });
   };
   if (loading)
@@ -202,13 +209,14 @@ function GymApp({ session }) {
                 onStartWorkout={startWorkout}
                 onGoToTemplates={() => selectTab("templates")}
                 onGoToProfile={() => selectTab("profile")}
-                onGoToHistory={() => selectTab("history")}
+                onGoToHistory={() => { setPerformanceView("overview"); selectTab("performance"); }}
                 onResume={() => selectTab("workout")}
                 onStartFromTemplate={startFromTemplate}
                 onJumpToWorkoutInHistory={(id) => {
-                  setTab("history");
-                  setHistoryView("history");
+                  setTab("performance");
+                  setPerformanceView("history");
                   setHistoryOrigin("home");
+                  setPerformanceExercise(null);
                   setExpandedHistory(id);
                 }}
               />
@@ -222,56 +230,35 @@ function GymApp({ session }) {
                 onDiscard={() => {
                   const editing = !!activeSession.active.editId;
                   activeSession.discardWorkout();
-                  selectTab(editing ? "history" : "home");
+                  if (editing) setTab("performance"); else selectTab("home");
                 }}
               />
             )}
-            {tab === "history" && (
-              <>
-                {!expandedHistory && (
-                  <>
-                    <p className="eyebrow">TES ENTRAÎNEMENTS, DANS LE TEMPS</p>
-                    <h1 className="page-title mt-2 mb-5">Suivi</h1>
-                    <div
-                      className="segmented mb-6"
-                      role="group"
-                      aria-label="Vue du suivi"
-                    >
-                      <button
-                        aria-pressed={historyView === "history"}
-                        onClick={() => setHistoryView("history")}
-                      >
-                        Historique
-                      </button>
-                      <button
-                        aria-pressed={historyView === "performance"}
-                        onClick={() => setHistoryView("performance")}
-                      >
-                        Performances
-                      </button>
-                    </div>
-                  </>
-                )}
-                {historyView === "history" || expandedHistory ? (
-                  <HistoryScreen
-                    workouts={workouts}
-                    expandedHistory={expandedHistory}
-                    setExpandedHistory={setExpandedHistory}
-                    onEditWorkout={editWorkout}
-                    onDeleteWorkout={(id) =>
-                      workoutsHook.deleteWorkout(id, { onError: setDataError })
-                    }
-                    onStartWorkout={startWorkout}
-                    filters={filters}
-                    setFilters={setFilters}
-                    onBack={() => {
-                      if (historyOrigin === "home") selectTab("home");
-                    }}
-                  />
-                ) : (
-                  <PRScreen workouts={workouts} />
-                )}
-              </>
+            {tab === "performance" && (
+              <PerformanceScreen
+                workouts={workouts}
+                exercises={libraryHook.exercises}
+                recordMuscle={recordMuscle}
+                onRecordMuscle={setRecordMuscle}
+                view={performanceView}
+                onView={setPerformanceView}
+                period={performancePeriod}
+                onPeriod={setPerformancePeriod}
+                exercise={performanceExercise}
+                onExercise={name => { setPerformanceExercise(name); if (name) setPerformanceWeeks(8); window.scrollTo({ top: 0 }); }}
+                weeks={performanceWeeks}
+                onWeeks={setPerformanceWeeks}
+                expandedHistory={expandedHistory}
+                setExpandedHistory={setExpandedHistory}
+                onOpenWorkout={id => { setHistoryOrigin("performance"); setExpandedHistory(id); window.scrollTo({ top: 0 }); }}
+                onHistoryBack={() => { if (historyOrigin === "home") selectTab("home"); }}
+                onEditWorkout={editWorkout}
+                onDeleteWorkout={id => workoutsHook.deleteWorkout(id, { onError: setDataError })}
+                onStartWorkout={startWorkout}
+                filters={filters}
+                setFilters={setFilters}
+                today={weekly.today}
+              />
             )}
             <div hidden={tab !== "templates"}>
               <TemplatesScreen
@@ -309,15 +296,17 @@ function GymApp({ session }) {
           onDone={() => {
             activeSession.dismissSessionSummary();
             setExpandedHistory(null);
-            setHistoryView("history");
-            setTab("history");
+            setPerformanceView("history");
+            setPerformanceExercise(null);
+            setHistoryOrigin("performance");
+            setTab("performance");
           }}
         />
       )}
       {selectedWeekRow && tab === "home" && (
         <PlannedSessionDrawer row={selectedWeekRow} weekly={weekly} workouts={workouts}
           onClose={() => setSelectedWeekDay(null)} onStart={startPlanned} onEdit={openWeek}
-          onHistory={id => { setTab("history"); setHistoryView("history"); setHistoryOrigin("home"); setExpandedHistory(id); }} />
+          onHistory={id => { setTab("performance"); setPerformanceView("history"); setHistoryOrigin("home"); setPerformanceExercise(null); setExpandedHistory(id); }} />
       )}
       {profileHook.showData && (
         <DataEditModal

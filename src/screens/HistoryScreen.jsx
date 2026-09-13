@@ -210,7 +210,7 @@ export default function HistoryScreen({
                   <span className="il-num text-sm block mt-3">
                     {fmtDur(w.durationMin)} ·{" "}
                     {fmtVolume(volumeOfExercises(w.exercises))}
-                    {counts[w.id] > 0 ? ` · ${counts[w.id]} PR` : ""}
+                    {counts[w.id] > 0 && <span className="performance-change"> · {counts[w.id]} PR</span>}
                   </span>
                 </span>
                 <ArrowUpRight size={18} />

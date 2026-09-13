@@ -177,7 +177,7 @@ try {
   console.log(
     "PASS: rest preference persists; camera requests permission only after consent; refusal handled",
   );
-  await click("Suivi");
+  await click("Performance");
   await expectVisible(
     page.getByRole("button", { name: "Démarrer une séance", exact: true }),
   );
@@ -294,7 +294,7 @@ try {
     .last()
     .click();
   await expectVisible(
-    page.getByRole("heading", { name: "Suivi", exact: true }),
+    page.getByRole("heading", { name: "Performance", exact: true }),
   );
   await click("Filtres");
   await page.getByLabel("Du", { exact: true }).fill("2027-01-01");
@@ -307,8 +307,8 @@ try {
   await expectVisible(page.getByText("SÉANCE ENREGISTRÉE", { exact: true }));
   await shot("06-history-detail");
   await click("Retour");
-  await click("Performances");
-  await page.getByLabel("Exercice à analyser").selectOption("Squat");
+  await page.getByRole("tab", { name: "Records", exact: true }).click();
+  await page.getByRole("tabpanel").getByRole("button").filter({ hasText: "Squat" }).click();
   await shot("07-performance");
   console.log(
     "PASS: workout saved with expected payload, history empty filters, dedicated detail and performance",
