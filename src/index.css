@@ -557,7 +557,6 @@ progress::-webkit-progress-value {
 .chart-guide { stroke:var(--c-line); stroke-width:.7; }
 .chart-line { stroke:var(--c-signal); stroke-width:2; vector-effect:non-scaling-stroke; }
 .chart-bar { fill:var(--c-signal); }
-.chart-caption { display:flex; justify-content:space-between; gap:8px; margin-top:10px; font-size:9px; color:var(--c-text-dim); }
 .performance-method { font-size:11px; color:var(--c-text-dim); padding:24px 0; }
 .performance-method summary { cursor:pointer; min-height:30px; }
 .performance-method p { margin-top:12px; line-height:1.6; }
@@ -572,10 +571,11 @@ progress::-webkit-progress-value {
 .performance-overview .segmented button[aria-pressed="true"], .exercise-performance .segmented button[aria-pressed="true"] { background:var(--c-surface); color:var(--c-text); box-shadow:0 0 0 1px var(--c-line); }
 
 .chart-axis-label { fill:var(--c-text-dim); font-size:10px; font-family:inherit; }
+.chart-axis-x-label { fill:var(--c-text-dim); font-size:9px; font-family:inherit; }
 
 /* Fixed columns and shared text rows keep the overview aligned as values change. */
 .performance-overview .performance-stats {
-  grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,.7fr) minmax(0,1.35fr);
+  grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,.8fr);
   margin-top:20px;
 }
 .performance-overview .performance-stats > div {

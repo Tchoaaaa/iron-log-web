@@ -1,11 +1,44 @@
 import { useId } from "react";
 import { fmtDate, fmtNum } from "../lib/format";
+// Rough advance width per character for the 9px axis-tick font, and the
+// minimum blank gap two adjacent tick labels must keep between them — both
+// in the chart's own SVG user units (see viewBox below), so they scale with
+// it regardless of screen size. Ticks are picked to guarantee this gap no
+// matter how many points or how long each label's text is.
+const TICK_CHAR_WIDTH = 5.6;
+const TICK_MIN_GAP = 6;
+function pickTicks(points, tickX, formatTick) {
+  const last = points.length - 1;
+  const anchorOf = (i) => (i === 0 ? "start" : i === last ? "end" : "middle");
+  const extentOf = (i, textLength) => {
+    const cx = tickX(i);
+    if (anchorOf(i) === "start") return [cx, cx + textLength];
+    if (anchorOf(i) === "end") return [cx - textLength, cx];
+    return [cx - textLength / 2, cx + textLength / 2];
+  };
+  const widthOf = (i) => formatTick(points[i].date, i).length * TICK_CHAR_WIDTH;
+  const chosen = [0];
+  let [, lastEnd] = extentOf(0, widthOf(0));
+  for (let i = 1; i < last; i++) {
+    const [start, end] = extentOf(i, widthOf(i));
+    if (start >= lastEnd + TICK_MIN_GAP) {
+      chosen.push(i);
+      lastEnd = end;
+    }
+  }
+  if (last > 0) {
+    const [start] = extentOf(last, widthOf(last));
+    if (start >= lastEnd + TICK_MIN_GAP) chosen.push(last);
+  }
+  return chosen;
+}
 export default function PerformanceChart({
   points,
   kind = "line",
   label,
   unit = "kg",
   compact = false,
+  tickFormat,
 }) {
   const id = useId();
   if (!points.length)
@@ -23,6 +56,13 @@ export default function PerformanceChart({
   const x = (i) =>
     left +
     plotWidth * (duration > 0 ? (points[i].date - firstDate) / duration : 0.5);
+  const barStep = plotWidth / points.length;
+  const tickX = kind === "bar" ? (i) => left + barStep * (i + 0.5) : x;
+  const formatTick =
+    tickFormat ||
+    ((ts) =>
+      new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }));
+  const tickIndexes = compact ? [] : pickTicks(points, tickX, formatTick);
   const min =
     kind === "bar"
       ? 0
@@ -68,41 +108,40 @@ export default function PerformanceChart({
             </g>
           ))}
         {kind === "bar" ? (
-          points.map((p, i) => {
-            const step = plotWidth / points.length;
-            return (
-              <rect
-                key={`${p.date}-${i}`}
-                x={left + i * step + step * 0.15}
-                y={y(p.value)}
-                width={step * 0.7}
-                height={height - pad - y(p.value)}
-                className="chart-bar"
-              >
-                <title>
-                  {fmtDate(p.date)} : {fmtNum(p.value)} {unit}
-                </title>
-              </rect>
-            );
-          })
+          points.map((p, i) => (
+            <rect
+              key={`${p.date}-${i}`}
+              x={left + i * barStep + barStep * 0.15}
+              y={y(p.value)}
+              width={barStep * 0.7}
+              height={height - pad - y(p.value)}
+              className="chart-bar"
+            >
+              <title>
+                {fmtDate(p.date)} : {fmtNum(p.value)} {unit}
+              </title>
+            </rect>
+          ))
         ) : (
-          <>
-            <polyline
-              points={points.map((p, i) => `${x(i)},${y(p.value)}`).join(" ")}
-              fill="none"
-              className="chart-line"
-            />
-
-          </>
+          <polyline
+            points={points.map((p, i) => `${x(i)},${y(p.value)}`).join(" ")}
+            fill="none"
+            className="chart-line"
+          />
         )}
+        {!compact &&
+          tickIndexes.map((i) => (
+            <text
+              key={i}
+              x={tickX(i)}
+              y={height - 2}
+              textAnchor={i === 0 ? "start" : i === points.length - 1 ? "end" : "middle"}
+              className="chart-axis-x-label"
+            >
+              {formatTick(points[i].date, i)}
+            </text>
+          ))}
       </svg>
-      {!compact && (
-        <figcaption className="chart-caption">
-          <span>{fmtDate(points[0].date)}</span>
-          <span>{unit}</span>
-          <span>{points.length > 1 ? fmtDate(points.at(-1).date) : ""}</span>
-        </figcaption>
-      )}
     </figure>
   );
 }

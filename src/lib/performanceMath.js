@@ -126,7 +126,9 @@ export function performanceOverview(workouts, period, now = Date.now()) {
               12,
             ),
           )
-        : addDays(cursor, 1);
+        : period === "month"
+          ? weekStart(addDays(cursor, 7))
+          : addDays(cursor, 1);
     const end = next > range.end ? range.end : next;
     const items = between(current, cursor, end);
     buckets.push({ date: timestamp(cursor), value: totals(items).volume });

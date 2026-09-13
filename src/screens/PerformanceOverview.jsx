@@ -2,9 +2,23 @@ import { useMemo } from "react";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import { performanceOverview, changePercent } from "../lib/performanceMath";
 import { fmtDate, fmtNum } from "../lib/format";
+import { WEEK_DAYS } from "../lib/weeklyPlan";
 import PerformanceChart from "../components/PerformanceChart";
 import RecordRow from "../components/RecordRow";
 const PERIODS = [["week", "Semaine"], ["month", "Mois"], ["year", "Année"]];
+// One bar per day (week), per calendar week (month), per month (year) — see
+// performanceMath's bucketing. PerformanceChart picks how many of these to
+// actually label, keeping a fixed minimum gap regardless of how many bars
+// or how long each format's text is (single letters, "Sem. N", full dates…).
+const VOLUME_TICKS = {
+  week: (ts) => WEEK_DAYS[(new Date(ts).getDay() + 6) % 7].short,
+  month: (ts, i) => `Sem. ${i + 1}`,
+  year: (ts) =>
+    new Date(ts)
+      .toLocaleDateString("fr-FR", { month: "short" })
+      .charAt(0)
+      .toUpperCase(),
+};
 export function Change({ value, suffix = "%" }) {
   return (
     <span className={value > 0 ? "performance-change" : "muted"}>
@@ -81,14 +95,6 @@ export default function PerformanceOverview({
                   fmtNum(totals.prs),
                   changePercent(totals.prs, previous.prs),
                 ],
-                [
-                  "Séances / sem.",
-                  totals.frequency.toLocaleString("fr-FR", {
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 1,
-                  }),
-                  changePercent(totals.frequency, previous.frequency),
-                ],
               ].map(([label, value, change]) => (
                 <div key={label}>
                   <strong className="il-num">{value}</strong>
@@ -114,6 +120,7 @@ export default function PerformanceOverview({
               unit="t"
               kind="bar"
               label="Volume d’entraînement"
+              tickFormat={VOLUME_TICKS[period]}
             />
             {!data.current.length && (
               <p className="muted text-sm mt-3">
@@ -180,10 +187,9 @@ export default function PerformanceOverview({
             <p>
               Volume : somme des charges × répétitions enregistrées. PR :
               nouvelle charge maximale par exercice, première séance lestée
-              comprise, comme dans l’historique. Fréquence : séances divisées
-              par les semaines écoulées, avec un minimum d’une semaine. Les
-              écarts comparent deux périodes de même durée ; « — » indique une
-              base absente ou nulle.
+              comprise, comme dans l’historique. Les écarts comparent deux
+              périodes de même durée ; « — » indique une base absente ou
+              nulle.
             </p>
             <p>
               La progression compare la première et la dernière séance de la
