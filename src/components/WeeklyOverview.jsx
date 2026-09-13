@@ -11,6 +11,7 @@ export default function WeeklyOverview({ weekly, onEdit, onSelect }) {
     (row) => row.slot && row.status !== "moved",
   );
   const done = planned.filter((row) => row.status === "done").length;
+  const pct = planned.length ? Math.round((done / planned.length) * 100) : 0;
   return (
     <section aria-label="Planning hebdomadaire" className="weekly-overview">
       {weekly.error && (
@@ -42,21 +43,24 @@ export default function WeeklyOverview({ weekly, onEdit, onSelect }) {
         <>
           <div className="section-heading">
             <h2 className="eyebrow">CETTE SEMAINE</h2>
-            <button className="text-button" onClick={onEdit}>
-              Modifier la semaine
-            </button>
+            {planned.length > 0 && (
+              <span className="week-ratio il-num">
+                <strong>{done}</strong> / {planned.length}
+              </span>
+            )}
           </div>
-          <p className="week-count il-num">
-            <span>{done}</span> / {planned.length}{" "}
-            <small>séance{planned.length !== 1 ? "s" : ""}</small>
-          </p>
-          <div>
+          {planned.length > 0 && (
+            <div className="week-progress">
+              <div className="week-progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+          )}
+          <div className="mt-4">
             {weekly.rows.map((row) => {
               const content = (
                 <>
                   <span className="eyebrow">{row.short}</span>
                   <span className="week-session-name">
-                    {row.slot ? row.name : "—"}
+                    {row.slot ? row.name : "REST"}
                     {row.missing && <small>À remplacer</small>}
                   </span>
                   <span
@@ -67,9 +71,11 @@ export default function WeeklyOverview({ weekly, onEdit, onSelect }) {
                         <Check size={14} aria-hidden="true" />
                         <span className="sr-only">Terminée</span>
                       </>
-                    ) : (
-                      STATUS[row.status] || ""
-                    )}
+                    ) : row.status === "today" ? (
+                      "Aujourd’hui"
+                    ) : row.status === "moved" ? (
+                      "Déplacée"
+                    ) : null}
                   </span>
                 </>
               );
@@ -94,6 +100,9 @@ export default function WeeklyOverview({ weekly, onEdit, onSelect }) {
               Une semaine libre. Ajoute une séance quand tu le souhaites.
             </p>
           )}
+          <button className="text-button muted mt-2" onClick={onEdit}>
+            Modifier la semaine
+          </button>
         </>
       )}
     </section>

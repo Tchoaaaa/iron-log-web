@@ -1,4 +1,4 @@
-import { ArrowUpRight, Play, UserRound } from "lucide-react";
+import { ArrowUpRight, Check, Play, UserRound } from "lucide-react";
 import WeeklyOverview from "../components/WeeklyOverview";
 import { fmtDate, fmtDur } from "../lib/format";
 export default function HomeScreen({
@@ -20,9 +20,18 @@ export default function HomeScreen({
   onJumpToWorkoutInHistory,
 }) {
   const todayRow = weekly.rows.find(row => row.date === weekly.today);
-  const todayTemplate = todayRow?.status !== "moved" ? todayRow?.template : null;
-  const todayDone = todayRow?.status === "done";
+  const todayActive = todayRow?.status !== "moved" ? todayRow : null;
+  const todayTemplate = todayActive?.template || null;
+  const todayDone = todayActive?.status === "done";
   const exerciseCount = todayTemplate?.exercises.reduce((total, exercise) => total + (exercise.pair ? 2 : 1), 0);
+  const heading = active
+    ? active.fromTemplate || "Ta séance t’attend."
+    : todayActive?.slot
+      ? todayActive.name
+      : "Aucune séance prévue.";
+  const showCta = active || !todayDone;
+  const ctaLabel = active ? "Reprendre" : todayTemplate ? "START" : "Choisir une séance";
+  const ctaAction = active ? onResume : todayTemplate ? () => onStartPlanned(todayRow) : onGoToTemplates;
   const month = new Date(`${weekly.today}T12:00:00`);
   const monthWorkouts = workouts.filter((w) => {
     const d = new Date(w.date);
@@ -52,17 +61,27 @@ export default function HomeScreen({
           {avatarUrl ? <img src={avatarUrl} alt="" /> : <UserRound size={22} />}
         </button>
       </div>
-      <WeeklyOverview weekly={weekly} onEdit={onEditWeek} onSelect={onSelectWeekDay} />
       <section className="today-section" aria-label="Séance du jour">
-        <p className="eyebrow">{active ? "SÉANCE EN COURS" : "AUJOURD’HUI"}</p>
-        <h2>{active ? active.fromTemplate || "Ta séance t’attend." : todayDone ? "Séance terminée." : todayTemplate ? todayTemplate.name : "Aucune séance prévue."}</h2>
-        <p className="muted text-sm">{active ? "Tes exercices et tes résultats sont conservés." : todayDone ? `${todayRow.name} · ${fmtDur(todayRow.workout.durationMin)}` : todayTemplate ? `${exerciseCount} exercice${exerciseCount !== 1 ? "s" : ""}` : "Ton planning reste libre. Entraîne-toi quand tu le souhaites."}</p>
-        <button className="primary mt-5 w-full" onClick={active ? onResume : todayTemplate && !todayDone ? () => onStartPlanned(todayRow) : onGoToTemplates}>
-          <Play size={17} /> {active ? "Reprendre ma séance" : todayTemplate && !todayDone ? "Démarrer la séance du jour" : "Choisir une séance"}
-        </button>
-        {!active && <button className="text-button w-full mt-2" onClick={onStartWorkout}>Démarrer une séance libre</button>}
-        {(active || (todayTemplate && !todayDone)) && <button className="text-button w-full mt-1" onClick={onGoToTemplates}>Choisir une autre séance <ArrowUpRight size={16} /></button>}
+        <p className="eyebrow">AUJOURD’HUI</p>
+        <h2>{heading}</h2>
+        {active && <p className="muted text-sm">Séance en cours</p>}
+        {!active && todayTemplate && !todayDone && (
+          <p className="muted text-sm">{exerciseCount} exercice{exerciseCount !== 1 ? "s" : ""}</p>
+        )}
+        {!active && todayDone && (
+          <p className="today-done mt-3">
+            <Check size={16} aria-hidden="true" /> Terminée
+          </p>
+        )}
+        {showCta && (
+          <button className="home-cta mt-5" onClick={ctaAction}>
+            <Play size={18} /> {ctaLabel}
+          </button>
+        )}
+        {!active && !todayDone && <button className="text-button muted w-full mt-2" onClick={onStartWorkout}>Démarrer une séance libre</button>}
+        {(active || (todayTemplate && !todayDone)) && <button className="text-button muted w-full mt-1" onClick={onGoToTemplates}>Choisir une autre séance <ArrowUpRight size={16} /></button>}
       </section>
+      <WeeklyOverview weekly={weekly} onEdit={onEditWeek} onSelect={onSelectWeekDay} />
       <div>
         <div className="section-heading">
           <h2>Ce mois-ci</h2>
