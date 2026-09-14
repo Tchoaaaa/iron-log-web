@@ -27,15 +27,15 @@ export default function PRScreen({ workouts, exercises, muscle, onMuscle, onExer
       </p>
       {records.length > 0 && (
         <div className="records-filter">
+          <p className="muted text-xs" role="status">{visible.length} record{visible.length > 1 ? "s" : ""}</p>
           <label className="field">
             Muscle
             <select className="il-input" aria-label="Filtrer les records par muscle" value={muscle} onChange={event => onMuscle(event.target.value)}>
-              <option value="">Tous les muscles</option>
+              <option value="">Tous</option>
               {muscle && !groups.includes(muscle) && <option value={muscle}>{muscle}</option>}
               {groups.map(group => <option key={group} value={group}>{group}</option>)}
             </select>
           </label>
-          <p className="muted text-xs" role="status">{visible.length} record{visible.length > 1 ? "s" : ""}</p>
         </div>
       )}
       {!records.length ? (
