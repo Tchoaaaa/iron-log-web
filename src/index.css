@@ -562,7 +562,7 @@ progress::-webkit-progress-value {
 .week-status.is-active, .week-link { color: var(--c-accent-text); }
 .today-section h2 { font-size: 34px; font-weight: 600; line-height: 1.1; letter-spacing: -.045em; margin: 12px 0; overflow-wrap: anywhere; }
 .today-done { display: inline-flex; align-items: center; gap: 6px; color: var(--c-accent-text); font-weight: 600; font-size: 13px; }
-.home-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 58px; border-radius: 12px; background: var(--c-signal); color: var(--c-signal-ink); font-size: 15px; font-weight: 600; }
+.home-cta { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 58px; border-radius: 999px; background: var(--c-text); color: var(--c-bg); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
 .week-editor-row { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-line); }
 .week-select { width: 100%; min-width: 0; padding: 12px 8px; border: 1px solid var(--c-control-border); border-radius: 9px; background: var(--c-surface); color: var(--c-text); font-size: 15px; }
 .week-select:disabled { color: var(--c-text-dim); opacity: .75; }

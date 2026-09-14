@@ -43,7 +43,7 @@ export default function HomeScreen({
       ? todayActive.name
       : "Aucune séance prévue.";
   const showCta = active || !todayDone;
-  const ctaLabel = active ? "Reprendre" : todayTemplate ? "START" : "Choisir une séance";
+  const ctaLabel = active ? "Reprendre" : todayTemplate ? "START" : "Choisir";
   const ctaAction = active ? onResume : todayTemplate ? () => onStartPlanned(todayRow) : onGoToTemplates;
   const month = new Date(`${weekly.today}T12:00:00`);
   const monthWorkouts = workouts.filter((w) => {
@@ -88,7 +88,7 @@ export default function HomeScreen({
         )}
         {showCta && (
           <button className="home-cta mt-5" onClick={ctaAction}>
-            <Play size={18} /> {ctaLabel}
+            {ctaLabel}
           </button>
         )}
         {active && (
