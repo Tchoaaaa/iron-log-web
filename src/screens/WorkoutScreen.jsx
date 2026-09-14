@@ -330,6 +330,22 @@ export default function WorkoutScreen({
                         set["weight" + sub.suffix],
                         set["reps" + sub.suffix],
                       );
+                      // Auto-validates once both fields hold a complete value, but
+                      // only when the user actually leaves the field — checking on
+                      // every keystroke would validate (and start the rest timer)
+                      // after the first digit, then immediately un-validate on the
+                      // next one.
+                      const autoValidate = () => {
+                        if (!validated && canValidate) {
+                          a.completeSet(
+                            entry.id,
+                            i,
+                            "done" + sub.suffix,
+                            sub.rest,
+                            sub.label,
+                          );
+                        }
+                      };
                       return (
                         <div key={i}>
                           <div
@@ -371,7 +387,7 @@ export default function WorkoutScreen({
                               step="any"
                               inputMode="decimal"
                               placeholder={
-                                previous ? String(previous.weight) : "0"
+                                previous ? String(previous.weight) : "—"
                               }
                               value={set["weight" + sub.suffix]}
                               onChange={(e) => {
@@ -389,18 +405,9 @@ export default function WorkoutScreen({
                                     "done" + sub.suffix,
                                     false,
                                   );
-                                } else if (
-                                  validSet(value, set["reps" + sub.suffix])
-                                ) {
-                                  a.completeSet(
-                                    entry.id,
-                                    i,
-                                    "done" + sub.suffix,
-                                    sub.rest,
-                                    sub.label,
-                                  );
                                 }
                               }}
+                              onBlur={autoValidate}
                             />
                             <input
                               className="il-input il-num w-full text-center"
@@ -429,18 +436,9 @@ export default function WorkoutScreen({
                                     "done" + sub.suffix,
                                     false,
                                   );
-                                } else if (
-                                  validSet(set["weight" + sub.suffix], value)
-                                ) {
-                                  a.completeSet(
-                                    entry.id,
-                                    i,
-                                    "done" + sub.suffix,
-                                    sub.rest,
-                                    sub.label,
-                                  );
                                 }
                               }}
+                              onBlur={autoValidate}
                             />
                             {showRpe && (
                               <SetRpeField

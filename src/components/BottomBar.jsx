@@ -2,12 +2,14 @@ import { useState } from "react";
 import Drawer from "./Drawer";
 import { Home, ClipboardList, ChartNoAxesCombined, UserRound } from "lucide-react";
 import { C } from "../lib/theme";
+import { listIncompleteSets } from "../lib/sessionTimer";
 import NavBtn from "./NavBtn";
 
 // Fixed to the viewport bottom so it stays put on scroll and zoom.
 // Finish/discard while in an active workout, else the tab bar.
 export default function BottomBar({ tab, active, templateDraft, finishing, onFinishWorkout, onSelectTab }) {
   const [confirmFinish, setConfirmFinish] = useState(false);
+  const incomplete = active ? listIncompleteSets(active.entries) : [];
   const confirmWorkoutFinish = async () => {
     if (finishing) return;
     try {
@@ -50,9 +52,30 @@ export default function BottomBar({ tab, active, templateDraft, finishing, onFin
           onClose={() => setConfirmFinish(false)}
           busy={finishing}
         >
-          <p className="muted text-sm mb-5">
-            Vérifie que tu as bien saisi toutes tes séries avant de terminer.
-          </p>
+          {incomplete.length > 0 ? (
+            <div className="mb-5">
+              <p className="text-sm mb-2">
+                {incomplete.length} série{incomplete.length > 1 ? "s" : ""}{" "}
+                incomplète{incomplete.length > 1 ? "s" : ""} ne{" "}
+                {incomplete.length > 1 ? "seront" : "sera"} pas enregistrée
+                {incomplete.length > 1 ? "s" : ""} :
+              </p>
+              <ul className="muted text-sm mb-3" style={{ paddingLeft: 18, listStyle: "disc" }}>
+                {incomplete.map((row, i) => (
+                  <li key={i}>
+                    {row.name}, série {row.setIndex}
+                  </li>
+                ))}
+              </ul>
+              <p className="muted text-sm">
+                Renseigne charge et répétitions pour les garder, ou termine sans elles.
+              </p>
+            </div>
+          ) : (
+            <p className="muted text-sm mb-5">
+              Vérifie que tu as bien saisi toutes tes séries avant de terminer.
+            </p>
+          )}
           <div className="flex flex-col gap-3">
             <button
               className="secondary"

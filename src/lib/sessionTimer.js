@@ -35,3 +35,34 @@ export function validSet(weight, reps) {
     Number(reps) > 0
   );
 }
+// A set with some data (weight or reps) but not a valid, saveable pair —
+// e.g. reps entered with no charge. Saving silently drops these; the
+// finish-session confirmation should surface them instead.
+export function hasPartialData(weight, reps) {
+  return (
+    !validSet(weight, reps) &&
+    (String(weight).trim() !== "" || String(reps).trim() !== "")
+  );
+}
+// Lists every incomplete set across the live session's entries, labelled
+// for display (superset sides get their own exercise name).
+export function listIncompleteSets(entries) {
+  const rows = [];
+  for (const e of entries || []) {
+    const sides =
+      e.kind === "superset"
+        ? [
+            { name: e.nameA, w: "weightA", r: "repsA" },
+            { name: e.nameB, w: "weightB", r: "repsB" },
+          ]
+        : [{ name: e.name, w: "weight", r: "reps" }];
+    e.sets.forEach((s, i) => {
+      for (const side of sides) {
+        if (hasPartialData(s[side.w], s[side.r])) {
+          rows.push({ name: side.name, setIndex: i + 1 });
+        }
+      }
+    });
+  }
+  return rows;
+}

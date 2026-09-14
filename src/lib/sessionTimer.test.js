@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { elapsedSessionMs, toggleSessionPause, restRemainingMs, validSet } from './sessionTimer';
+import { elapsedSessionMs, toggleSessionPause, restRemainingMs, validSet, hasPartialData, listIncompleteSets } from './sessionTimer';
 describe('session clock', () => {
   it('recovers elapsed time after backgrounding without depending on interval ticks', () => expect(elapsedSessionMs({ startedAt: 1000 }, 181000)).toBe(180000));
   it('excludes paused time across a persisted reload and multiple pauses', () => {
@@ -29,5 +29,35 @@ describe('session clock', () => {
   it('returns 0 when there is no rest timer running', () => {
     expect(restRemainingMs({ startedAt: 0 }, 1000)).toBe(0);
     expect(restRemainingMs(null, 1000)).toBe(0);
+  });
+  it('flags a set as partial only when some but not enough data is entered', () => {
+    expect(hasPartialData('', '')).toBe(false);
+    expect(hasPartialData('20', '10')).toBe(false);
+    expect(hasPartialData('', '10')).toBe(true);
+    expect(hasPartialData('20', '')).toBe(true);
+    expect(hasPartialData('20', '0')).toBe(true);
+  });
+  it('lists incomplete sets across normal and superset entries, labelled by exercise', () => {
+    const entries = [
+      {
+        kind: 'single',
+        name: 'Développé couché',
+        sets: [
+          { weight: '40', reps: '10' },
+          { weight: '', reps: '10' },
+        ],
+      },
+      {
+        kind: 'superset',
+        nameA: 'Squat',
+        nameB: 'Fentes',
+        sets: [{ weightA: '60', repsA: '5', weightB: '', repsB: '8' }],
+      },
+    ];
+    expect(listIncompleteSets(entries)).toEqual([
+      { name: 'Développé couché', setIndex: 2 },
+      { name: 'Fentes', setIndex: 1 },
+    ]);
+    expect(listIncompleteSets([])).toEqual([]);
   });
 });
