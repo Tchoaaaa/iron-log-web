@@ -25,19 +25,19 @@
   :root {
     color-scheme: dark;
     --c-accent-text: #a5e7df;
-    --c-control-border: #999b95;
-    --c-bg: #414246;
-    --c-surface: #48494d;
-    --c-surface-raised: #3b3c40;
-    --c-line: #595a5e;
-    --c-text: #f0efeb; /* Primary */
-    --c-text-dim: #d0d0cb; /* Secondary */
-    --c-text-faint: #c2c3bd; /* Tertiary */
-    --c-signal: #7ccbc6;
-    --c-signal-ink: #23241f;
-    --c-steel: #d0d0cb;
+    --c-control-border: #6b6c68;
+    --c-bg: #1c1c1e;
+    --c-surface: #242426;
+    --c-surface-raised: #2d2d30;
+    --c-line: #3f4043;
+    --c-text: #f5f5f3; /* Primary */
+    --c-text-dim: #b7b8b5; /* Secondary */
+    --c-text-faint: #8d8e8a; /* Tertiary */
+    --c-signal: #8fd8d2;
+    --c-signal-ink: #16211f;
+    --c-steel: #b7b8b5;
     --c-rust: #ffb6ae;
-    --c-water: #d0d0cb;
+    --c-water: #b7b8b5;
   }
 }
 
