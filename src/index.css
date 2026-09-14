@@ -600,6 +600,7 @@ progress::-webkit-progress-value {
 .performance-method summary { cursor:pointer; min-height:30px; }
 .performance-method p { margin-top:12px; line-height:1.6; }
 .detail-stats { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:24px; padding-bottom:24px; border-bottom:1px solid var(--c-line); }
+.detail-stats > div { align-items:center; text-align:center; }
 @media (max-width:360px) {
   .performance-exercise-row { grid-template-columns:minmax(0,1fr) 38px auto 12px; gap:5px; }
   .performance-stats > div { padding:0 5px; }

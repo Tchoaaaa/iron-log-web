@@ -161,7 +161,6 @@ export function exerciseDetail(workouts, name, weeks, now = Date.now()) {
   const end = addDays(localDate(now), 1);
   const start = addDays(end, -weeks * 7);
   const current = between(rows, start, end);
-  const previous = between(rows, addDays(start, -weeks * 7), start);
   const volume = (list) => list.reduce((n, r) => n + r.volume, 0);
   const progress = exerciseProgress(name, current);
   return {
@@ -170,7 +169,6 @@ export function exerciseDetail(workouts, name, weeks, now = Date.now()) {
     end,
     best: rows.reduce(betterSet, null),
     volume: volume(current),
-    volumeChange: changePercent(volume(current), volume(previous)),
     maxCharge: current.reduce((max, r) => Math.max(max, r.weight), 0),
     prs: current.filter((r) => r.pr).length,
   };

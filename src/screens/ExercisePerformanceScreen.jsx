@@ -3,7 +3,6 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 import { exerciseDetail } from "../lib/performanceMath";
 import { fmtDate, fmtNum, fmtVolume } from "../lib/format";
 import PerformanceChart from "../components/PerformanceChart";
-import { Change } from "./PerformanceOverview";
 export default function ExercisePerformanceScreen({
   name,
   workouts,
@@ -79,20 +78,16 @@ export default function ExercisePerformanceScreen({
       </section>
       <div className="performance-stats detail-stats">
         <div>
-          <small>Charge</small>
+          <small>Charge max</small>
           <strong className="il-num">{fmtNum(data.maxCharge)} kg</strong>
-          <small>Sur la période</small>
         </div>
         <div>
           <small>Volume</small>
           <strong className="il-num">{fmtVolume(data.volume)}</strong>
-          <Change value={data.volumeChange} />
-          <small>vs {weeks} sem. précédentes</small>
         </div>
         <div>
           <small>PR</small>
           <strong className="il-num">{data.prs}</strong>
-          <small>Sur la période</small>
         </div>
       </div>
       <section className="performance-section">
