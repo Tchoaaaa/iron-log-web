@@ -216,7 +216,7 @@ try {
   assert.equal(
     await page
       .locator(".performance-stats > div")
-      .filter({ hasText: "Volume (t)" })
+      .filter({ hasText: "Volume (T)" })
       .locator("strong")
       .innerText(),
     "6",

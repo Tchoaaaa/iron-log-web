@@ -86,7 +86,7 @@ export default function PerformanceOverview({
                   changePercent(totals.sessions, previous.sessions),
                 ],
                 [
-                  "Volume (t)",
+                  "Volume (T)",
                   fmtNum(Math.round(totals.volume / 1000)),
                   changePercent(totals.volume, previous.volume),
                 ],
@@ -110,14 +110,14 @@ export default function PerformanceOverview({
           <section className="performance-section">
             <div className="section-heading">
               <h2 className="eyebrow">VOLUME</h2>
-              <span className="il-num text-sm">{volumeTonnes} t</span>
+              <span className="il-num text-sm">{volumeTonnes} T</span>
             </div>
             <PerformanceChart
               points={data.buckets.map((point) => ({
                 ...point,
                 value: point.value / 1000,
               }))}
-              unit="t"
+              unit="T"
               kind="bar"
               label="Volume d’entraînement"
               tickFormat={VOLUME_TICKS[period]}
