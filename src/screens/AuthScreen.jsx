@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eye, EyeOff, MailCheck } from "lucide-react";
 import { C } from "../lib/theme";
-import { signIn, signUp, resendConfirmation } from "../lib/api";
+import { signIn, signUp, resendConfirmation, requestPasswordReset } from "../lib/api";
 
 // Sign-up / sign-in screen. Passwords are handed straight to Supabase Auth and
 // never stored, logged, or echoed back by the app.
@@ -14,6 +14,9 @@ export default function AuthScreen({ authError = "" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(authError);
   const [confirmationEmail, setConfirmationEmail] = useState("");
+  const [resetRequest, setResetRequest] = useState(false); // false | "form" | "sent"
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState("");
   const [resendAt, setResendAt] = useState(0);
   const [clockNow, setClockNow] = useState(() => Date.now());
   const cooldown = Math.max(0, Math.ceil((resendAt - clockNow) / 1000));
@@ -52,6 +55,24 @@ export default function AuthScreen({ authError = "" }) {
     }
   };
   const [info, setInfo] = useState("");
+
+  const requestReset = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setResetError("Renseigne ton email.");
+      return;
+    }
+    setResetBusy(true);
+    setResetError("");
+    try {
+      await requestPasswordReset(email.trim());
+      setResetRequest("sent");
+    } catch (err) {
+      setResetError(translateAuthError(err));
+    } finally {
+      setResetBusy(false);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -156,7 +177,79 @@ export default function AuthScreen({ authError = "" }) {
             : "Connecte-toi pour continuer"}
         </p>
 
-        {confirmationEmail ? (
+        {resetRequest ? (
+          <section
+            className="w-full flex flex-col gap-4 text-center"
+            aria-label="Réinitialiser le mot de passe"
+          >
+            {resetRequest === "sent" ? (
+              <>
+                <MailCheck size={40} className="mx-auto" />
+                <h2 className="text-2xl font-semibold">Vérifie ta boîte mail</h2>
+                <p className="muted text-sm">
+                  Si un compte existe pour <strong>{email.trim()}</strong>, un
+                  lien de réinitialisation vient de lui être envoyé.
+                </p>
+                <button
+                  className="secondary"
+                  onClick={() => {
+                    setResetRequest(false);
+                    setResetError("");
+                  }}
+                >
+                  Retour à la connexion
+                </button>
+              </>
+            ) : (
+              <form
+                onSubmit={requestReset}
+                className="w-full max-w-xs flex flex-col gap-2.5 text-left mx-auto"
+              >
+                <p className="muted text-sm mb-1">
+                  On t’enverra un lien pour choisir un nouveau mot de passe.
+                </p>
+                <input
+                  className="au-input px-3 py-2.5 rounded-xl text-sm"
+                  aria-label="Adresse e-mail"
+                  required
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                {resetError && (
+                  <div style={{ color: C.rust }} className="text-xs">
+                    {resetError}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={resetBusy}
+                  style={{
+                    background: C.amber,
+                    color: C.signalInk,
+                    opacity: resetBusy ? 0.6 : 1,
+                  }}
+                  className="py-3 rounded-full font-semibold text-sm mt-1"
+                >
+                  {resetBusy ? "…" : "Envoyer le lien"}
+                </button>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    setResetRequest(false);
+                    setResetError("");
+                  }}
+                >
+                  Retour à la connexion
+                </button>
+              </form>
+            )}
+          </section>
+        ) : confirmationEmail ? (
           <section
             className="w-full flex flex-col gap-4 text-center"
             aria-label="Confirmation de l’adresse e-mail"
@@ -270,6 +363,21 @@ export default function AuthScreen({ authError = "" }) {
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetRequest("form");
+                    setError("");
+                    setInfo("");
+                  }}
+                  style={{ color: C.textDim }}
+                  className="text-xs self-end underline"
+                >
+                  Mot de passe oublié ?
+                </button>
+              )}
 
               {error && (
                 <div style={{ color: C.rust }} className="text-xs">

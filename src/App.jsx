@@ -4,6 +4,7 @@ import { useAuth } from "./lib/useAuth";
 import { EXERCISE_LIBRARY } from "./data/exercises";
 import { EMPTY_FILTERS } from "./lib/historyFilters";
 import AuthScreen from "./screens/AuthScreen";
+import ResetPasswordScreen from "./screens/ResetPasswordScreen";
 import AdminDashboard from "./screens/AdminDashboard";
 import PerformanceScreen from "./screens/PerformanceScreen";
 import HomeScreen from "./screens/HomeScreen";
@@ -24,8 +25,9 @@ import { useWorkouts } from "./hooks/useWorkouts";
 import { useTemplates } from "./hooks/useTemplates";
 import { useActiveSession } from "./hooks/useActiveSession";
 export default function App() {
-  const { session, loading, error } = useAuth();
+  const { session, loading, error, recovery, clearRecovery } = useAuth();
   if (loading) return <div className="loading-screen">Chargement…</div>;
+  if (recovery) return <ResetPasswordScreen onDone={clearRecovery} />;
   if (!session) return <AuthScreen authError={error} />;
   return <GymApp key={session.user.id} session={session} />;
 }

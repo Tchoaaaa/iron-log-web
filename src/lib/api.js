@@ -46,6 +46,22 @@ export async function resendConfirmation(email) {
   if (error) throw error;
 }
 
+export async function requestPasswordReset(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: new URL("?reset=1", window.location.origin).href,
+  });
+  if (error) throw error;
+}
+
+// Only valid within the short-lived session Supabase opens from a recovery
+// link (see useAuth's PASSWORD_RECOVERY handling) — not a general "change my
+// password while signed in" call.
+export async function updatePassword(password) {
+  const { data, error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+  return data.user;
+}
+
 // Personal preferences only. These editable fields never grant access or roles.
 export async function updatePreferences(patch) {
   const { data, error } = await supabase.auth.updateUser({ data: patch });

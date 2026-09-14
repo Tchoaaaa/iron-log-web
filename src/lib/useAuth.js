@@ -11,6 +11,10 @@ export function useAuth() {
     return params.has('error') ? 'Ce lien est expiré ou invalide. Connecte-toi pour demander un nouveau lien de confirmation.' : '';
   });
   const [loading, setLoading] = useState(true);
+  // A PASSWORD_RECOVERY event opens a real, valid session from the emailed
+  // link — but the app must show "choose a new password" instead of
+  // dropping the user straight into their account with that session.
+  const [recovery, setRecovery] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -22,9 +26,10 @@ export function useAuth() {
       setLoading(false);
     }).catch(() => { if (active) { setError("Connexion indisponible. Réessaie."); setLoading(false); } });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next ?? null);
       setLoading(false);
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
     });
 
     return () => {
@@ -33,5 +38,5 @@ export function useAuth() {
     };
   }, []);
 
-  return { session, loading, error };
+  return { session, loading, error, recovery, clearRecovery: () => setRecovery(false) };
 }
