@@ -5,6 +5,9 @@ import { REST_OPTIONS } from "../lib/constants";
 import { formatRest } from "../lib/format";
 import { hasSetRpe } from "../lib/rpe";
 
+// Accent-insensitive search — "developpe" should find "Développé couché".
+const foldAccents = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 export default function ExercisePickerModal({
   picker,
   onFinish,
@@ -17,7 +20,9 @@ export default function ExercisePickerModal({
   const [error, setError] = useState("");
   const superSet = plan.kind === "superset";
   const filtered = library.filter((e) =>
-    e.name.toLocaleLowerCase("fr").includes(query.toLocaleLowerCase("fr")),
+    foldAccents(e.name.toLocaleLowerCase("fr")).includes(
+      foldAccents(query.toLocaleLowerCase("fr")),
+    ),
   );
   const choose = (name) => {
     update(choosing, name);
