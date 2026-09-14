@@ -19,6 +19,20 @@ export function setsOfExercises(exercises) {
   return exercises.reduce((sum, e) => sum + e.sets.length, 0);
 }
 
+// Rough duration estimate for a template (exercises where `sets` is a count,
+// not a logged array) — ~40s of work per set plus the configured rest
+// between sets, rounded to the nearest 5 minutes for a clean "~45 min".
+const TEMPLATE_SET_SECONDS = 40;
+export function estimateTemplateMinutes(exercises) {
+  if (!exercises?.length) return 0;
+  const totalSeconds = exercises.reduce((total, ex) => {
+    const rest = ex.pair ? ((ex.restA || 0) + (ex.restB || 0)) / 2 : ex.rest || 0;
+    const perSet = ex.pair ? TEMPLATE_SET_SECONDS * 2 : TEMPLATE_SET_SECONDS;
+    return total + ex.sets * (perSet + rest);
+  }, 0);
+  return Math.max(5, Math.round(totalSeconds / 60 / 5) * 5);
+}
+
 // For each exercise name, the sets logged the last time it was done
 // (workouts is expected newest-first). Used as the greyed reference per set
 // in a running workout.

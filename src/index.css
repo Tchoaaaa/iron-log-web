@@ -662,3 +662,89 @@ progress::-webkit-progress-value {
 .records-filter .field { flex:1; max-width:230px; min-width:0; }
 .records-filter select { font-size:16px; }
 .records-filter > p { padding-bottom:13px; white-space:nowrap; }
+
+.page-title-input {
+  display: block;
+  width: 100%;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+.template-exercise-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--c-line);
+  touch-action: pan-y;
+  will-change: transform;
+}
+.template-exercise-row.dragging {
+  position: relative;
+  z-index: 5;
+  background: var(--c-surface);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  border-bottom-color: transparent;
+}
+.template-exercise-num { flex-shrink: 0; width: 20px; }
+.template-exercise-body {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.template-exercise-body strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.template-exercise-body small {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.template-exercise-action {
+  width: 36px;
+  height: 36px;
+  border: none;
+  flex-shrink: 0;
+  color: var(--c-text-dim);
+}
+.template-drag-handle { cursor: grab; touch-action: none; }
+.template-add-exercise {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  color: var(--c-text-dim);
+  font-size: 14px;
+  font-weight: 500;
+}
+.template-add-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-accent-text);
+  color: var(--c-accent-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.template-cta-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  max-width: 430px;
+  margin-left: auto;
+  margin-right: auto;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-bg);
+  padding: 12px 20px max(12px, env(safe-area-inset-bottom));
+}
