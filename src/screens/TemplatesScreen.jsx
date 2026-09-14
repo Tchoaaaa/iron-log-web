@@ -218,7 +218,7 @@ export default function TemplatesScreen({
                   <small className="muted">
                     {ex.sets} série{ex.sets > 1 ? "s" : ""}
                     {repsLabel(ex) ? ` · ${repsLabel(ex)} reps` : ""} · {restLabel(ex)}
-                    {ex.rpeEnabled ? " · RPE" : ""}
+                    {ex.rpeEnabled ? " · RPE ON" : " · RPE OFF"}
                   </small>
                 </button>
                 <button

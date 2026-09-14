@@ -748,3 +748,10 @@ progress::-webkit-progress-value {
   background: var(--c-bg);
   padding: 12px 20px max(12px, env(safe-area-inset-bottom));
 }
+.template-cta-bar .primary {
+  /* Off-white pill, inverted per theme — reuses the app's own text/bg
+     tokens rather than a hardcoded color, so light mode gets a dark pill
+     and dark mode gets the off-white one, matching the reference design. */
+  background: var(--c-text);
+  color: var(--c-bg);
+}
