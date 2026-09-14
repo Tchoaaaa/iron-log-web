@@ -3,6 +3,7 @@ import { ArrowLeft, Search, Plus } from "lucide-react";
 import Drawer from "./Drawer";
 import { REST_OPTIONS } from "../lib/constants";
 import { formatRest } from "../lib/format";
+import { hasSetRpe } from "../lib/rpe";
 
 export default function ExercisePickerModal({
   picker,
@@ -30,6 +31,8 @@ export default function ExercisePickerModal({
       return setError("Choisis chaque exercice avant de continuer.");
     if (superSet && plan.nameA === plan.nameB)
       return setError("Choisis deux exercices différents pour le superset.");
+    if (!plan.rpeEnabled && hasSetRpe(original))
+      return setError("Efface les RPE saisis dans les séries avant de désactiver cette option.");
     const values = [
       ...plan.targets.slice(0, plan.count),
       ...(superSet ? plan.targetsB.slice(0, plan.count) : []),
@@ -51,7 +54,7 @@ export default function ExercisePickerModal({
         .slice(plan.count)
         .some((s) =>
           Object.entries(s).some(
-            ([k, v]) => /^(weight|reps)/.test(k) && v !== "",
+            ([k, v]) => /^(weight|reps|rpe)/.test(k) && v !== "",
           ),
         )
     )
@@ -123,11 +126,12 @@ export default function ExercisePickerModal({
             {choosing === "nameB" ? "Deuxième exercice" : "Choisir un exercice"}
           </p>
           <label className="relative">
-            <Search size={17} className="absolute left-3 top-3.5" />
+            <Search size={17} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             <input
               autoFocus
               aria-label="Rechercher un exercice"
-              className="il-input w-full pl-10"
+              className="il-input w-full"
+              style={{ paddingRight: 40 }}
               placeholder="Rechercher ou créer…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -253,6 +257,21 @@ export default function ExercisePickerModal({
               </label>
             ))}
           </div>
+          <label className="flex items-start gap-3 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-5 w-5 shrink-0"
+              checked={!!plan.rpeEnabled}
+              onChange={(e) => update("rpeEnabled", e.target.checked)}
+            />
+            <span>
+              <span className="font-semibold">Activer le RPE ressenti pour ce bloc</span>
+              <span className="muted block text-xs mt-1">
+                Un RPE ressenti facultatif pour chaque série
+                {superSet ? " de chaque exercice du superset" : " de ce bloc"}, à saisir pendant la séance.
+              </span>
+            </span>
+          </label>
           <button className="primary" onClick={finish}>
             {original ? "Enregistrer les modifications" : "Ajouter à la séance"}
           </button>

@@ -5,6 +5,7 @@ import { volumeOfExercises, repsOfExercises, setsOfExercises } from "../lib/work
 import { liveEntry, replaceLiveEntry } from "../lib/exercisePlan";
 import { elapsedSessionMs, toggleSessionPause, validSet } from "../lib/sessionTimer";
 import { readJSON, writeJSON, debounce } from "../lib/storage";
+import { normalizeRpe, rpeEnabled, setRpeMetadata } from "../lib/rpe";
 
 const storageKey = (userId) => `gymapp:active-session:${userId}`;
 
@@ -22,26 +23,29 @@ export function cleanActiveEntries(entries) {
       if (e.kind === "superset") {
         const a = {
           name: e.nameA,
+          ...(rpeEnabled(e) ? { rpeEnabled: true } : {}),
           superset: e.id,
           sets: e.sets
             .filter((s) => validSet(s.weightA, s.repsA))
-            .map((s) => ({ weight: Number(s.weightA), reps: Number(s.repsA) })),
+            .map((s) => ({ weight: Number(s.weightA), reps: Number(s.repsA), ...setRpeMetadata(s.rpeA) })),
         };
         const b = {
           name: e.nameB,
+          ...(rpeEnabled(e) ? { rpeEnabled: true } : {}),
           superset: e.id,
           sets: e.sets
             .filter((s) => validSet(s.weightB, s.repsB))
-            .map((s) => ({ weight: Number(s.weightB), reps: Number(s.repsB) })),
+            .map((s) => ({ weight: Number(s.weightB), reps: Number(s.repsB), ...setRpeMetadata(s.rpeB) })),
         };
         return [a, b];
       }
       return [
         {
           name: e.name,
+          ...(rpeEnabled(e) ? { rpeEnabled: true } : {}),
           sets: e.sets
             .filter((s) => validSet(s.weight, s.reps))
-            .map((s) => ({ weight: Number(s.weight), reps: Number(s.reps) })),
+            .map((s) => ({ weight: Number(s.weight), reps: Number(s.reps), ...setRpeMetadata(s.rpe) })),
         },
       ];
     })
@@ -78,7 +82,10 @@ export function groupExercisesIntoEntries(exercises) {
           name: `${a.name} + ${b.name}`,
           nameA: a.name,
           nameB: b.name,
+          ...((rpeEnabled(a) || rpeEnabled(b)) ? { rpeEnabled: true } : {}),
           sets: Array.from({ length: setCount }, (_, i) => ({
+            ...setRpeMetadata(a.sets[i]?.rpe, "rpeA"),
+            ...setRpeMetadata(b.sets[i]?.rpe, "rpeB"),
             weightA: a.sets[i] ? String(a.sets[i].weight) : "",
             repsA: a.sets[i] ? String(a.sets[i].reps) : "",
             doneA: !!a.sets[i],
@@ -94,7 +101,9 @@ export function groupExercisesIntoEntries(exercises) {
       id: uid(),
       kind: "single",
       name: e.name,
+      ...(rpeEnabled(e) ? { rpeEnabled: true } : {}),
       sets: e.sets.map((s) => ({
+        ...setRpeMetadata(s.rpe),
         weight: s.weight === 0 ? "0" : String(s.weight),
         reps: String(s.reps),
         done: true,
@@ -165,7 +174,7 @@ export function useActiveSession({ userId, autoRest = false }) {
       fromTemplate: tpl.name,
       fromTemplateId: tpl.id,
       plannedSlot,
-      entries: tpl.exercises.map(ex => liveEntry({ kind: ex.pair ? 'superset' : 'single', name: ex.name, nameA: ex.pair?.[0], nameB: ex.pair?.[1], count: ex.sets || 1, rest: ex.rest, restA: ex.restA, restB: ex.restB, targets: ex.targets, targetsB: ex.targetsB })),
+      entries: tpl.exercises.map(ex => liveEntry({ kind: ex.pair ? 'superset' : 'single', name: ex.name, nameA: ex.pair?.[0], nameB: ex.pair?.[1], count: ex.sets || 1, rest: ex.rest, restA: ex.restA, restB: ex.restB, targets: ex.targets, targetsB: ex.targetsB, rpeEnabled: ex.rpeEnabled })),
     });
   };
 
@@ -192,6 +201,7 @@ export function useActiveSession({ userId, autoRest = false }) {
   };
 
   const updateSet = (entryId, idx, field, value) => {
+    if (/^rpe[AB]?$/.test(field) && value !== "" && normalizeRpe(value) === null) return;
     setActive((a) => ({
       ...a,
       entries: a.entries.map((e) =>
@@ -203,6 +213,13 @@ export function useActiveSession({ userId, autoRest = false }) {
   };
   const removeEntry = (entryId) => {
     setActive((a) => ({ ...a, entries: a.entries.filter((e) => e.id !== entryId) }));
+  };
+
+  const enableRpe = (entryId) => {
+    setActive(a => a ? {
+      ...a,
+      entries: a.entries.map(e => e.id === entryId ? { ...e, rpeEnabled: true } : e),
+    } : a);
   };
 
   // `workouts`/`addWorkout`/`replaceWorkout` come from useWorkouts — passed
@@ -315,6 +332,7 @@ export function useActiveSession({ userId, autoRest = false }) {
     startFromTemplate,
     addEntryToActive,
     updateSet,
+    enableRpe,
     removeEntry,
     editEntry,
     togglePause,

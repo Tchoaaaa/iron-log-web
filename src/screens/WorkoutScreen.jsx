@@ -4,6 +4,7 @@ import {
   Plus,
   Pencil,
   Check,
+  Info,
   ChevronDown,
   ChevronUp,
   Pause,
@@ -18,6 +19,8 @@ import ExerciseNoteField from "../components/ExerciseNoteField";
 import ExercisePickerModal from "../components/ExercisePickerModal";
 import Drawer from "../components/Drawer";
 import { useExercisePicker } from "../hooks/useExercisePicker";
+import SetRpeField from "../components/SetRpeField";
+import { rpeEnabled } from "../lib/rpe";
 
 // Owns the only 1-second tick on this screen (session chrono + rest
 // countdown). Kept local to this component — and out of useActiveSession —
@@ -220,6 +223,10 @@ export default function WorkoutScreen({
       )}
       {active.entries.map((entry, index) => {
         const superSet = entry.kind === "superset";
+        const showRpe = rpeEnabled(entry);
+        const setGrid = showRpe
+          ? "30px minmax(28px, 0.55fr) minmax(0, 1fr) minmax(0, 1fr) minmax(80px, 1.25fr)"
+          : SET_GRID;
         const subs = superSet
           ? [
               { label: entry.nameA, suffix: "A", rest: entry.restA },
@@ -298,16 +305,23 @@ export default function WorkoutScreen({
                   </div>
                   {!isCollapsed && (
                     <>
+                  {showRpe && (
+                    <div className="rpe-help muted">
+                      <Info size={17} aria-hidden="true" />
+                      <p>RPE facultatif · RPE 1 = très facile · RPE 10 = maximal</p>
+                    </div>
+                  )}
                   <div
                     className="grid mt-4 mb-2 text-[10px] muted uppercase"
-                    style={{ gridTemplateColumns: SET_GRID, gap: 6 }}
+                    style={{ gridTemplateColumns: setGrid, gap: 6 }}
                   >
                     <span>#</span>
                     <span className="text-center">Préc.</span>
                     <span className="text-center">Kg</span>
                     <span className="text-center">Reps</span>
+                    {showRpe && <span className="text-center">RPE</span>}
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className={showRpe ? "set-list-rpe" : "flex flex-col gap-2"}>
                     {entry.sets.map((set, i) => {
                       const previous = lastByExercise[sub.label]?.sets?.[i];
                       const validated = !!set["done" + sub.suffix];
@@ -320,7 +334,7 @@ export default function WorkoutScreen({
                         <div key={i}>
                           <div
                             className={`grid items-center set-row ${validated ? "completed" : ""}`}
-                            style={{ gridTemplateColumns: SET_GRID, gap: 6 }}
+                            style={{ gridTemplateColumns: setGrid, gap: 6 }}
                           >
                             <button
                               className={`set-check ${validated ? "checked" : ""}`}
@@ -428,6 +442,13 @@ export default function WorkoutScreen({
                                 }
                               }}
                             />
+                            {showRpe && (
+                              <SetRpeField
+                                label={`${sub.label}, série ${i + 1}, RPE ressenti`}
+                                value={set["rpe" + sub.suffix]}
+                                onChange={(value) => updateSet(entry.id, i, "rpe" + sub.suffix, value)}
+                              />
+                            )}
                           </div>
                           {target && (
                             <p className="muted text-[10px] text-right mt-1 pr-10">
@@ -450,6 +471,11 @@ export default function WorkoutScreen({
                 </div>
               ))}
             </div>
+            {!isCollapsed && !showRpe && (
+              <button className="text-button text-xs mt-3" onClick={() => a.enableRpe(entry.id)}>
+                + Activer le RPE par série
+              </button>
+            )}
             {!isCollapsed && !lockedExercises && (
               <button
                 className="text-button text-xs mt-3"

@@ -438,6 +438,45 @@ button[aria-current="page"] {
 .completed .il-input {
   border-color: var(--c-accent-text);
 }
+.rpe-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--c-line);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.rpe-help svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.set-list-rpe > div {
+  padding: 12px 0;
+}
+.set-list-rpe > div + div {
+  border-top: 1px solid var(--c-line);
+}
+.set-row .rpe-select {
+  appearance: none;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 22px 10px 6px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+}
+.rpe-chevron {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--c-text-dim);
+}
 progress {
   height: 5px;
   accent-color: var(--c-accent-text);

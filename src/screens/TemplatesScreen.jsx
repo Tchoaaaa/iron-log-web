@@ -117,6 +117,7 @@ export default function TemplatesScreen({
                 {ex.pair &&
                   ` · ${Array.from({ length: ex.sets }, (_, j) => ex.targetsB?.[j] || "—").join(" / ")}`}
               </p>
+              {ex.rpeEnabled && <p className="muted text-xs mt-2">RPE ressenti activé pour ce bloc</p>}
               <button
                 className="text-button text-xs mt-2"
                 onClick={() => t.removeExerciseAt(i)}
@@ -159,6 +160,7 @@ export default function TemplatesScreen({
                 <strong>{ex.name}</strong>
                 <small>
                   {ex.sets} séries{ex.pair ? " · Superset" : ""}
+                  {ex.rpeEnabled ? " · RPE ressenti" : ""}
                 </small>
               </span>
             </div>

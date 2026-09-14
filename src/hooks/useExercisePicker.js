@@ -11,6 +11,7 @@ const fresh = () => ({
   restB: 90,
   targets: [],
   targetsB: [],
+  rpeEnabled: false,
 });
 export function useExercisePicker({ library }) {
   const [showPicker, setShowPicker] = useState(false);

@@ -1,7 +1,8 @@
 import { uid } from "./constants";
+import { rpeEnabled, setRpeMetadata } from "./rpe";
 
 export function templateEntry(plan) {
-  const common = { sets: plan.count, targets: plan.targets };
+  const common = { sets: plan.count, targets: plan.targets, ...(plan.rpeEnabled ? { rpeEnabled: true } : {}) };
   return plan.kind === "superset"
     ? {
         ...common,
@@ -29,6 +30,7 @@ export function liveEntry(plan, previous) {
   return {
     id: previous?.id || uid(),
     kind: plan.kind,
+    ...(plan.rpeEnabled ? { rpeEnabled: true } : {}),
     name: isSuper ? `${plan.nameA} + ${plan.nameB}` : plan.name,
     ...(isSuper
       ? {
@@ -46,6 +48,8 @@ export function liveEntry(plan, previous) {
       const done = old[wasSuper ? "doneA" : "done"] ?? false;
       return isSuper
         ? {
+            ...setRpeMetadata(old[wasSuper ? "rpeA" : "rpe"], "rpeA"),
+            ...setRpeMetadata(oldB.rpeB, "rpeB"),
             weightA: weight,
             repsA: reps,
             doneA: done,
@@ -55,7 +59,7 @@ export function liveEntry(plan, previous) {
             doneB: oldB.doneB ?? false,
             targetB: plan.targetsB?.[i] || "",
           }
-        : { weight, reps, done, target: plan.targets?.[i] || "" };
+        : { weight, reps, done, target: plan.targets?.[i] || "", ...setRpeMetadata(old[wasSuper ? "rpeA" : "rpe"]) };
     }),
   };
 }
@@ -69,7 +73,9 @@ export function replaceLiveEntry(previous, plan) {
       kind: "single",
       name: previous.nameB,
       rest: previous.restB,
+      ...(previous.rpeEnabled ? { rpeEnabled: true } : {}),
       sets: previous.sets.map((s) => ({
+        ...setRpeMetadata(s.rpeB),
         weight: s.weightB,
         reps: s.repsB,
         done: s.doneB,
@@ -88,6 +94,7 @@ export function replaceTemplateEntry(previous, plan) {
       sets: previous.sets,
       rest: previous.restB,
       targets: previous.targetsB,
+      ...(previous.rpeEnabled ? { rpeEnabled: true } : {}),
     });
   return result;
 }
@@ -97,6 +104,7 @@ export function planFromEntry(entry) {
   const superSet = entry.kind === "superset" || !!entry.pair;
   return {
     kind: superSet ? "superset" : "single",
+    rpeEnabled: rpeEnabled(entry),
     name: superSet ? entry.nameA || entry.pair[0] : entry.name,
     nameA: superSet ? entry.nameA || entry.pair[0] : entry.name,
     nameB: entry.nameB || entry.pair?.[1] || "",

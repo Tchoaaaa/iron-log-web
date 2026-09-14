@@ -15,6 +15,7 @@ import {
 } from "../lib/workoutMath";
 import { EMPTY_FILTERS, filterWorkouts } from "../lib/historyFilters";
 import Drawer from "../components/Drawer";
+import { normalizeRpe, rpeEnabled } from "../lib/rpe";
 
 export default function HistoryScreen({
   workouts,
@@ -84,6 +85,7 @@ export default function HistoryScreen({
                   <th>Série</th>
                   <th>Charge</th>
                   <th>Reps</th>
+                  {rpeEnabled(ex) && <th>RPE</th>}
                 </tr>
               </thead>
               <tbody>
@@ -92,6 +94,7 @@ export default function HistoryScreen({
                     <td>{String(i + 1).padStart(2, "0")}</td>
                     <td>{fmtNum(s.weight)} kg</td>
                     <td>{s.reps}</td>
+                    {rpeEnabled(ex) && <td>{normalizeRpe(s.rpe) === null ? "—" : `RPE ${s.rpe}`}</td>}
                   </tr>
                 ))}
               </tbody>
