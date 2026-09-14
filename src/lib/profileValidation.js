@@ -1,4 +1,7 @@
-export function validateProfile(form, required = false) {
+// Only the name is required, at onboarding or later — body metrics are
+// nice-to-have context, not a gate to using the app, so they stay optional
+// everywhere they're asked for.
+export function validateProfile(form) {
   if (!form.name.trim()) throw new Error("Renseigne ton prénom ou ton pseudo.");
   const fields = [
     ["age", "Âge", 1, 120, true],
@@ -18,7 +21,6 @@ export function validateProfile(form, required = false) {
       .trim()
       .replace(",", ".");
     if (!raw) {
-      if (required) throw new Error(`Renseigne le champ « ${label} ».`);
       result[keys[field]] = null;
       continue;
     }

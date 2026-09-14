@@ -18,7 +18,7 @@ export default function ProfileFields({ form, onChange, disabled }) {
         ["steps", "Pas moyens / jour", "numeric", "Ex. 8000"],
       ].map(([key, label, mode, placeholder]) => (
         <label key={key} className="field">
-          {label}
+          {label} <span className="muted">(facultatif)</span>
           <input
             className="il-input il-num w-full"
             inputMode={mode}

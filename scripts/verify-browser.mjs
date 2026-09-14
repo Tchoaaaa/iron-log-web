@@ -141,10 +141,10 @@ try {
   await expectVisible(page.getByRole("heading", { name: "Posons les bases." }));
   console.log("PASS: dev server renders onboarding with no Vite overlay");
   await shot("01-onboarding");
-  await page.getByLabel("Âge (ans)", { exact: true }).fill("28");
-  await page.getByLabel("Poids (kg)", { exact: true }).fill("75,5");
-  await page.getByLabel("Taille (cm)", { exact: true }).fill("178");
-  await page.getByLabel("Pas moyens / jour", { exact: true }).fill("8000");
+  await page.getByLabel("Âge (ans) (facultatif)", { exact: true }).fill("28");
+  await page.getByLabel("Poids (kg) (facultatif)", { exact: true }).fill("75,5");
+  await page.getByLabel("Taille (cm) (facultatif)", { exact: true }).fill("178");
+  await page.getByLabel("Pas moyens / jour (facultatif)", { exact: true }).fill("8000");
   await click("C’est parti");
   await expectVisible(page.getByRole("heading", { name: "Bonjour, Adam." }));
   assert.equal(db.profile.weight_kg, 75.5);

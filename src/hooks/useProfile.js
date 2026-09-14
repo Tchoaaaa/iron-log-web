@@ -68,7 +68,7 @@ export function useProfile({ email, user }) {
     if (dataBusy) return;
     let patch;
     try {
-      patch = validateProfile(dataForm, needsOnboarding);
+      patch = validateProfile(dataForm);
     } catch (e) {
       setDataFormError(e.message);
       return;
