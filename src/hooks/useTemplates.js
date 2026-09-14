@@ -66,8 +66,26 @@ export function useTemplates() {
     setTemplateDraft(next);
     persist(next, opts);
   };
+  // A template with zero exercises can't be saved (persist() no-ops below
+  // that point), so removing the last one would silently fail — and the
+  // exercise would reappear on reload with no explanation. Block it instead.
   const removeExerciseAt = (index, opts) => {
+    if (templateDraft.exercises.length <= 1) {
+      opts?.onError?.(
+        "Une séance doit contenir au moins un exercice. Supprime la séance entière si tu veux t’en débarrasser.",
+      );
+      return false;
+    }
     const next = { ...templateDraft, exercises: templateDraft.exercises.filter((_, i) => i !== index) };
+    setTemplateDraft(next);
+    persist(next, opts);
+    return true;
+  };
+  // Restores an exercise at a specific index — used to undo a removal.
+  const restoreExerciseAt = (index, exercise, opts) => {
+    const exercises = [...templateDraft.exercises];
+    exercises.splice(index, 0, exercise);
+    const next = { ...templateDraft, exercises };
     setTemplateDraft(next);
     persist(next, opts);
   };
@@ -101,6 +119,7 @@ export function useTemplates() {
     addExerciseToDraft,
     editExerciseInDraft,
     removeExerciseAt,
+    restoreExerciseAt,
     reorderDraft,
     deleteTemplate,
   };

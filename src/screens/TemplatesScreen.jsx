@@ -40,6 +40,9 @@ export default function TemplatesScreen({
   const [busy, setBusy] = useState(false);
   const [dragOrder, setDragOrder] = useState(null);
   const [draggingIndex, setDraggingIndex] = useState(null);
+  const [undoRemoval, setUndoRemoval] = useState(null); // { index, exercise }
+  const undoTimer = useRef(null);
+  useEffect(() => () => clearTimeout(undoTimer.current), []);
   const dragFrom = useRef(null);
   // Pointer events for one drag gesture can all land before React commits a
   // re-render between them — endDrag must read the live order synchronously
@@ -59,17 +62,35 @@ export default function TemplatesScreen({
 
   useEffect(() => () => rafId.current && cancelAnimationFrame(rafId.current), []);
 
+  const dismissUndo = () => {
+    clearTimeout(undoTimer.current);
+    setUndoRemoval(null);
+  };
   const add = () => {
+    dismissUndo();
     setEditingIndex(null);
     picker.open();
   };
   const finish = (plan) => {
+    dismissUndo();
     if (editingIndex == null) t.addExerciseToDraft(plan, { onError });
     else t.editExerciseInDraft(editingIndex, plan, { onError });
+  };
+  const removeExercise = (index, exercise) => {
+    if (!t.removeExerciseAt(index, { onError })) return;
+    clearTimeout(undoTimer.current);
+    setUndoRemoval({ index, exercise });
+    undoTimer.current = setTimeout(() => setUndoRemoval(null), 6000);
+  };
+  const undoRemove = () => {
+    if (!undoRemoval) return;
+    t.restoreExerciseAt(undoRemoval.index, undoRemoval.exercise, { onError });
+    dismissUndo();
   };
 
   const exercises = dragOrder || draft?.exercises || [];
   const startDrag = (index) => (e) => {
+    dismissUndo();
     e.currentTarget.setPointerCapture(e.pointerId);
     const tops = rowRefs.current.map((el) => el?.getBoundingClientRect().top ?? 0);
     rowTops.current = tops;
@@ -223,8 +244,13 @@ export default function TemplatesScreen({
                 </button>
                 <button
                   className="icon-button template-exercise-action"
-                  aria-label={`Retirer ${ex.name}`}
-                  onClick={() => t.removeExerciseAt(i, { onError })}
+                  aria-label={
+                    exercises.length <= 1
+                      ? "Une séance doit contenir au moins un exercice"
+                      : `Retirer ${ex.name}`
+                  }
+                  disabled={exercises.length <= 1}
+                  onClick={() => removeExercise(i, ex)}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -241,6 +267,14 @@ export default function TemplatesScreen({
               </div>
             ))}
           </div>
+          {undoRemoval && (
+            <p className="muted text-sm flex items-center justify-between gap-3">
+              « {undoRemoval.exercise.name} » retiré.
+              <button className="text-button" onClick={undoRemove}>
+                Annuler
+              </button>
+            </p>
+          )}
           <button className="template-add-exercise" onClick={add}>
             <span className="template-add-icon">
               <Plus size={18} />

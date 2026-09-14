@@ -156,11 +156,33 @@ try {
   assert.equal(db.templates[0].exercises[0].name, "Dips", "drag should reorder exercises");
   await shot("tpl-02-after-reorder");
 
+  // Remove a row, confirm undo restores it in place.
+  await page.locator('button[aria-label^="Retirer"]').first().click();
+  await page.waitForTimeout(300);
+  assert.equal(db.templates[0].exercises.length, 2, "exercise should be removed");
+  await click("Annuler");
+  await page.waitForTimeout(300);
+  assert.equal(db.templates[0].exercises.length, 3, "undo should restore the exercise");
+  assert.equal(db.templates[0].exercises[0].name, "Dips", "undo should restore it at its original slot");
+
+  // Removing down to the last exercise should be blocked, not silently dropped.
+  await page.locator('button[aria-label^="Retirer"]').first().click();
+  await page.waitForTimeout(200);
+  await page.locator('button[aria-label^="Retirer"]').first().click();
+  await page.waitForTimeout(300);
+  assert.equal(db.templates[0].exercises.length, 1, "should stop at 1 exercise");
+  assert.equal(
+    await page.locator('button[aria-label="Une séance doit contenir au moins un exercice"]').isDisabled(),
+    true,
+    "the last exercise's remove button should be disabled",
+  );
+  await shot("tpl-02b-last-exercise-guard");
+
   // Back to the list — card should preview exercise names, not just a count.
   await click("Mes séances");
   await shot("tpl-03-list-with-preview");
   const preview = await page.locator(".list-row small").first().innerText();
-  assert.match(preview, /Dips/, "list card should preview exercise names");
+  assert.match(preview, /Élévations latérales/, "list card should preview exercise names");
 
   // Reopen, rename via the kebab menu, verify title updates without a modal detour.
   await page.getByRole("button", { name: /^Push/ }).click();
