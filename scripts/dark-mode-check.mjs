@@ -97,5 +97,8 @@ await click("Mes séances");
 await click("Accueil");
 await click("Performance");
 await shot("dark-04-performance");
+await page.getByRole("button", { name: "Records" }).click();
+await page.getByRole("button", { name: /Développé couché/ }).click();
+await shot("dark-05-exercise-detail");
 await browser.close();
 console.log("done");

@@ -97,7 +97,7 @@ describe("performance calculations", () => {
       repsChange: 4,
       volume: 0,
       prs: 0,
-      chargeChange: null,
+      maxCharge: 0,
     });
     expect(exerciseRecords(exerciseTimelines(data))).toHaveLength(1);
   });

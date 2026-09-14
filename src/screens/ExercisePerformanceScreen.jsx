@@ -80,8 +80,8 @@ export default function ExercisePerformanceScreen({
       <div className="performance-stats detail-stats">
         <div>
           <small>Charge</small>
-          <Change value={data.chargeChange} />
-          <small>Première → dernière</small>
+          <strong className="il-num">{fmtNum(data.maxCharge)} kg</strong>
+          <small>Sur la période</small>
         </div>
         <div>
           <small>Volume</small>
