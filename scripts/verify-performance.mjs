@@ -216,10 +216,10 @@ try {
   assert.equal(
     await page
       .locator(".performance-stats > div")
-      .filter({ hasText: "Volume (T)" })
+      .filter({ hasText: "Volume" })
       .locator("strong")
       .innerText(),
-    "6",
+    "5.88 T",
   );
   assert.equal(await page.getByText(/1RM/i).count(), 0);
   await progression.click();

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
 import { performanceOverview, changePercent } from "../lib/performanceMath";
-import { fmtDate, fmtNum } from "../lib/format";
+import { fmtDate, fmtNum, fmtVolume } from "../lib/format";
 import { WEEK_DAYS } from "../lib/weeklyPlan";
 import PerformanceChart from "../components/PerformanceChart";
 import RecordRow from "../components/RecordRow";
@@ -86,8 +86,8 @@ export default function PerformanceOverview({
                   changePercent(totals.sessions, previous.sessions),
                 ],
                 [
-                  "Volume (T)",
-                  fmtNum(Math.round(totals.volume / 1000)),
+                  "Volume",
+                  fmtVolume(totals.volume),
                   changePercent(totals.volume, previous.volume),
                 ],
                 [
