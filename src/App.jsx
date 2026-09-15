@@ -23,6 +23,7 @@ import { useProfile } from "./hooks/useProfile";
 import { useExerciseLibrary } from "./hooks/useExerciseLibrary";
 import { useWorkouts } from "./hooks/useWorkouts";
 import { useTemplates } from "./hooks/useTemplates";
+import { useRestAlerts } from "./hooks/useRestAlerts";
 import { useActiveSession } from "./hooks/useActiveSession";
 export default function App() {
   const { session, loading, error, recovery, clearRecovery } = useAuth();
@@ -45,6 +46,7 @@ function GymApp({ session }) {
     userId: session.user.id,
     autoRest: profileHook.autoRest,
   });
+  useRestAlerts(activeSession.active, profileHook.restAlerts);
   const { workouts, lastByExercise } = workoutsHook;
   const { templates, templateDraft } = templatesHook;
   const [loading, setLoading] = useState(true);

@@ -11,6 +11,7 @@ export function useProfile({ email, user }) {
   const [autoRest, setAutoRest] = useState(
     user.user_metadata?.auto_rest === true,
   );
+  const [restAlerts, setRestAlerts] = useState(user.user_metadata?.rest_alerts !== false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [showData, setShowData] = useState(false);
   const [dataForm, setDataForm] = useState({
@@ -110,6 +111,21 @@ export function useProfile({ email, user }) {
       setPreferenceBusy(false);
     }
   };
+  const saveRestAlerts = async (value) => {
+    if (preferenceBusy) return;
+    const previous = restAlerts;
+    setRestAlerts(value);
+    setPreferenceBusy(true);
+    setProfileError("");
+    try {
+      await api.updatePreferences({ rest_alerts: value });
+    } catch {
+      setRestAlerts(previous);
+      setProfileError("La préférence n’a pas été enregistrée. Réessaie.");
+    } finally {
+      setPreferenceBusy(false);
+    }
+  };
   const signOut = async () => {
     setProfileError("");
     try {
@@ -162,6 +178,7 @@ export function useProfile({ email, user }) {
     avatarUrl,
     metrics,
     autoRest,
+    restAlerts,
     needsOnboarding,
     showData,
     dataForm,
@@ -178,6 +195,7 @@ export function useProfile({ email, user }) {
     setDataFormField,
     saveData,
     saveAutoRest,
+    saveRestAlerts,
     signOut,
     saveAvatar,
     handleAvatarFile,

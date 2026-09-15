@@ -183,7 +183,7 @@ export function useActiveSession({ userId, autoRest = false }) {
   const togglePause = () => { const time = Date.now(); setActive(a => toggleSessionPause(a, time)); };
   const startRest = (seconds = 90, label = 'Repos') => {
     const time = Date.now();
-    setActive(a => a ? { ...a, restTimer: seconds > 0 ? { endsAt: time + seconds * 1000, seconds, label } : null } : a);
+    setActive(a => a ? { ...a, restTimer: seconds > 0 ? { endsAt: (a.pausedAt ?? time) + seconds * 1000, seconds, label } : null } : a);
   };
   const stopRest = () => setActive(a => a ? { ...a, restTimer: null } : a);
   const completeSet = (entryId, idx, doneKey, rest, label) => {
@@ -196,7 +196,7 @@ export function useActiveSession({ userId, autoRest = false }) {
       if (done && !validSet(set['weight' + suffix], set['reps' + suffix])) return a;
       const seconds = rest ?? 90;
       return { ...a, entries: a.entries.map(e => e.id === entryId ? { ...e, sets: e.sets.map((s, i) => i === idx ? { ...s, [doneKey]: done } : s) } : e),
-        ...(done && autoRest && !a.editId && seconds > 0 ? { restTimer: { endsAt: time + seconds * 1000, seconds, label } } : {}) };
+        ...(done && autoRest && !a.editId && seconds > 0 ? { restTimer: { endsAt: (a.pausedAt ?? time) + seconds * 1000, seconds, label } } : {}) };
     });
   };
 

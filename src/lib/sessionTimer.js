@@ -13,6 +13,9 @@ export function toggleSessionPause(active, now) {
         ...active,
         pausedMs: (active.pausedMs || 0) + now - active.pausedAt,
         pausedAt: null,
+        ...(active.restTimer ? {
+          restTimer: { ...active.restTimer, endsAt: active.restTimer.endsAt + now - active.pausedAt },
+        } : {}),
       }
     : { ...active, pausedAt: now };
 }

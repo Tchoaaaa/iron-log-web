@@ -92,6 +92,28 @@ export default function ProfileScreen({
             onChange={(e) => p.saveAutoRest(e.target.checked)}
           />
         </label>
+        <label className="flex items-start justify-between gap-5 cursor-pointer mt-5">
+          <span>
+            <span className="text-sm font-medium block">Alertes de repos</span>
+            <span className="muted text-xs block mt-1">
+              Un bip toutes les 30 secondes, puis à 3, 2 et 1 seconde.
+              Son final et vibration à la fin du repos.
+            </span>
+          </span>
+          <input
+            className="toggle"
+            type="checkbox"
+            role="switch"
+            aria-label="Alertes de repos"
+            checked={p.restAlerts}
+            disabled={p.preferenceBusy}
+            onChange={(e) => p.saveRestAlerts(e.target.checked)}
+          />
+        </label>
+        <p className="muted text-xs mt-3">
+          Vibration sur les appareils compatibles. Garde l’application ouverte
+          pour recevoir les alertes.
+        </p>
       </div>
       {p.profileError && (
         <p className="error" role="alert">
