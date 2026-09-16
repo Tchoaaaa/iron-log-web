@@ -4,7 +4,6 @@ import {
   Plus,
   Pencil,
   Check,
-  Info,
   ChevronDown,
   ChevronUp,
   Pause,
@@ -225,7 +224,7 @@ export default function WorkoutScreen({
         const superSet = entry.kind === "superset";
         const showRpe = rpeEnabled(entry);
         const setGrid = showRpe
-          ? "30px minmax(28px, 0.55fr) minmax(0, 1fr) minmax(0, 1fr) minmax(80px, 1.25fr)"
+          ? "30px minmax(26px, 0.45fr) minmax(0, 0.92fr) minmax(0, 0.92fr) minmax(64px, 0.9fr)"
           : SET_GRID;
         const subs = superSet
           ? [
@@ -245,7 +244,7 @@ export default function WorkoutScreen({
         );
         return (
           <article className="exercise-card" key={entry.id}>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-3">
               <button
                 type="button"
                 className="exercise-toggle flex-1"
@@ -281,38 +280,22 @@ export default function WorkoutScreen({
                 </button>
               )}
             </div>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
               {subs.map((sub) => (
                 <div key={sub.suffix}>
                   <h2 className="text-lg font-semibold leading-snug">
                     {sub.label}
                   </h2>
-                  <div className="muted text-xs mt-2 flex justify-between items-center">
-                    <span>
-                      {entry.sets.length} séries ·{" "}
-                      {sub.rest === 0
-                        ? "Sans repos"
-                        : `${fmtRestMMSS(sub.rest ?? 90)} de repos`}
-                    </span>
-                    {!isCollapsed && timing && sub.rest !== 0 && (
-                      <button
-                        className="text-button text-xs"
-                        onClick={() => a.startRest(sub.rest ?? 90, sub.label)}
-                      >
-                        Repos
-                      </button>
-                    )}
+                  <div className="muted text-xs mt-1.5">
+                    {entry.sets.length} séries ·{" "}
+                    {sub.rest === 0
+                      ? "Sans repos"
+                      : `${fmtRestMMSS(sub.rest ?? 90)} de repos`}
                   </div>
                   {!isCollapsed && (
                     <>
-                  {showRpe && (
-                    <div className="rpe-help muted">
-                      <Info size={17} aria-hidden="true" />
-                      <p>RPE facultatif · RPE 1 = très facile · RPE 10 = maximal</p>
-                    </div>
-                  )}
                   <div
-                    className="grid mt-4 mb-2 text-[10px] muted uppercase"
+                    className="grid mt-3 mb-1.5 text-[10px] muted uppercase"
                     style={{ gridTemplateColumns: setGrid, gap: 6 }}
                   >
                     <span>#</span>
@@ -321,7 +304,7 @@ export default function WorkoutScreen({
                     <span className="text-center">Reps</span>
                     {showRpe && <span className="text-center">RPE</span>}
                   </div>
-                  <div className={showRpe ? "set-list-rpe" : "flex flex-col gap-2"}>
+                  <div className={showRpe ? "set-list-rpe" : "flex flex-col gap-1.5"}>
                     {entry.sets.map((set, i) => {
                       const previous = lastByExercise[sub.label]?.sets?.[i];
                       const validated = !!set["done" + sub.suffix];
@@ -470,13 +453,18 @@ export default function WorkoutScreen({
               ))}
             </div>
             {!isCollapsed && !showRpe && (
-              <button className="text-button text-xs mt-3" onClick={() => a.enableRpe(entry.id)}>
-                + Activer le RPE par série
+              <button
+                type="button"
+                className="text-button text-xs mt-2.5 rpe-toggle-row"
+                onClick={() => a.enableRpe(entry.id)}
+              >
+                <span>RPE par série</span>
+                <span className="muted">Activer</span>
               </button>
             )}
             {!isCollapsed && !lockedExercises && (
               <button
-                className="text-button text-xs mt-3"
+                className="text-button text-xs mt-2.5"
                 onClick={() => setRemove(entry)}
               >
                 Retirer cet exercice

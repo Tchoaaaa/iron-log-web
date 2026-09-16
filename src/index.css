@@ -407,9 +407,20 @@ button[aria-current="page"] {
   background: var(--c-surface-raised);
 }
 .set-row .il-input {
-  padding: 10px 4px;
+  padding: 8px 4px;
   font-size: 15px;
   background: var(--c-bg);
+}
+.set-row:focus-within .il-input {
+  border-color: var(--c-accent-text);
+}
+.set-row input[type="number"] {
+  -moz-appearance: textfield;
+}
+.set-row input[type="number"]::-webkit-outer-spin-button,
+.set-row input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .set-check {
   min-height: 44px;
@@ -438,22 +449,12 @@ button[aria-current="page"] {
 .completed .il-input {
   border-color: var(--c-accent-text);
 }
-.rpe-help {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--c-line);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.rpe-help svg {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
 .set-list-rpe > div {
-  padding: 12px 0;
+  padding: 10px 0;
+}
+.rpe-toggle-row {
+  width: 100%;
+  justify-content: space-between;
 }
 .set-list-rpe > div + div {
   border-top: 1px solid var(--c-line);
@@ -461,9 +462,8 @@ button[aria-current="page"] {
 .set-row .rpe-select {
   appearance: none;
   width: 100%;
-  min-height: 44px;
-  padding: 10px 22px 10px 6px;
-  border-radius: 999px;
+  padding: 8px 22px 8px 6px;
+  border-radius: 10px;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   text-align: center;

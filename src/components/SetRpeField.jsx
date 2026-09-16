@@ -12,7 +12,7 @@ export default function SetRpeField({ label, value, onChange }) {
       >
         <option value="" aria-label="Sans RPE">—</option>
         {Array.from({ length: 10 }, (_, i) => (
-          <option key={i + 1} value={i + 1}>RPE {i + 1}</option>
+          <option key={i + 1} value={i + 1} aria-label={`RPE ${i + 1}`}>{i + 1}</option>
         ))}
       </select>
       <ChevronDown className="rpe-chevron" size={14} aria-hidden="true" />

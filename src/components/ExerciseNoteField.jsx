@@ -12,8 +12,8 @@ export default function ExerciseNoteField({ label, value, onType, onCommit }) {
       <textarea
         autoFocus
         rows={2}
-        className="il-input rounded-lg px-2.5 py-2 text-[13px] w-full mt-3.5"
-        style={{ resize: "none" }}
+        className="il-input rounded-lg px-2.5 py-2 w-full mt-3"
+        style={{ resize: "none", fontSize: "12px" }}
         placeholder={label ? `Note — ${label}` : "Réglages, ressenti, remarque…"}
         value={value}
         onChange={(e) => onType(e.target.value)}
@@ -28,8 +28,8 @@ export default function ExerciseNoteField({ label, value, onType, onCommit }) {
     <button
       type="button"
       onClick={() => setOpen(true)}
-      className="text-left w-full min-w-0 mt-3.5 text-[11px]"
-      style={{ color: has ? C.textDim : C.textFaint, letterSpacing: "0.06em" }}
+      className="text-left w-full min-w-0 mt-3"
+      style={{ color: has ? C.textDim : C.textFaint, letterSpacing: "0.06em", fontSize: "12px" }}
     >
       {has ? (
         <span className="whitespace-pre-wrap break-words">{value}</span>
