@@ -30,19 +30,11 @@ function targetSummary(sets, suffix) {
   return unique.length === 1 ? unique[0] : values.join("/");
 }
 
-// Owns the only 1-second tick on this screen (session chrono + rest
-// countdown). Kept local to this component — and out of useActiveSession —
-// so the once-a-second re-render stays scoped to this small panel instead
-// of the whole app shell (which owns the session's state).
-function SessionTimers({
-  active,
-  timing,
-  onTogglePause,
-  onStartRest,
-  onStopRest,
-  done,
-  total,
-}) {
+// Owns the only 1-second tick for the session chrono. Kept local to this
+// component — and out of useActiveSession — so the once-a-second re-render
+// stays scoped to this small panel instead of the whole app shell (which
+// owns the session's state).
+function SessionTimers({ active, timing, onTogglePause, done, total }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!timing) return;
@@ -50,8 +42,6 @@ function SessionTimers({
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [timing]);
-  const rest = active.restTimer;
-  const remaining = restRemainingMs(active, now);
   return (
     <>
       {timing && (
@@ -97,36 +87,76 @@ function SessionTimers({
           aria-label="Séries validées"
         />
       </div>
-      {timing && rest && (
-        <div className="rest-panel">
+    </>
+  );
+}
+
+// A rest timer for one exercise, inline where it's started — no separate
+// panel elsewhere on the screen. Only ticks its own 1-second interval while
+// its own rest is the active one, so idle exercises don't re-render.
+function RestTrigger({ active, label, seconds, onStartRest, onStopRest }) {
+  const isActive = active.restTimer?.label === label;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isActive) return;
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [isActive]);
+  if (!isActive) {
+    return (
+      <div className="rest-trigger">
+        <div className="flex items-center gap-2.5">
+          <Clock size={18} className="muted" aria-hidden="true" />
           <div>
-            <p className="eyebrow">
-              {remaining ? "TEMPS DE REPOS" : "REPOS TERMINÉ"}
+            <p className="muted text-xs">Temps de repos</p>
+            <p className="il-num text-lg font-semibold mt-0.5">
+              {fmtRestMMSS(seconds)}
             </p>
-            <p className="il-num text-3xl mt-1" role="timer">
-              {fmtTimer(remaining)}
-            </p>
-            <p className="muted text-xs mt-1">{rest.label}</p>
-            {remaining === 0 && (
-              <span role="status" className="text-sm">
-                Prêt pour la prochaine série.
-              </span>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <button
-              className="secondary compact"
-              onClick={() => onStartRest(rest.seconds, rest.label)}
-            >
-              Relancer
-            </button>
-            <button className="text-button text-xs" onClick={onStopRest}>
-              <X size={14} /> Fermer
-            </button>
           </div>
         </div>
-      )}
-    </>
+        <button
+          type="button"
+          className="secondary compact"
+          aria-label={`Démarrer le repos de ${label}`}
+          onClick={() => onStartRest(seconds, label)}
+        >
+          <Play size={14} /> Lancer le repos
+        </button>
+      </div>
+    );
+  }
+  const remaining = restRemainingMs(active, now);
+  return (
+    <div className="rest-trigger">
+      <div className="flex items-center gap-2.5">
+        <Clock size={18} className="muted" aria-hidden="true" />
+        <div>
+          <p className="muted text-xs">
+            {remaining ? "Repos en cours" : "Repos terminé"}
+          </p>
+          <p className="il-num text-lg font-semibold mt-0.5" role="timer">
+            {fmtTimer(remaining)}
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2 items-end">
+        <button
+          type="button"
+          className="secondary compact"
+          onClick={() => onStartRest(seconds, label)}
+        >
+          Relancer
+        </button>
+        <button
+          type="button"
+          className="text-button text-xs"
+          onClick={onStopRest}
+        >
+          <X size={14} /> Fermer
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -184,8 +214,6 @@ export default function WorkoutScreen({
         active={active}
         timing={timing}
         onTogglePause={a.togglePause}
-        onStartRest={a.startRest}
-        onStopRest={a.stopRest}
         done={done}
         total={total}
       />
@@ -275,24 +303,14 @@ export default function WorkoutScreen({
                   {!isCollapsed && (
                     <>
                   {timing && sub.rest > 0 && (
-                    <div className="rest-trigger mt-3">
-                      <div className="flex items-center gap-2.5">
-                        <Clock size={18} className="muted" aria-hidden="true" />
-                        <div>
-                          <p className="muted text-xs">Temps de repos</p>
-                          <p className="il-num text-lg font-semibold mt-0.5">
-                            {fmtRestMMSS(sub.rest)}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="secondary compact"
-                        aria-label={`Démarrer le repos de ${sub.label}`}
-                        onClick={() => a.startRest(sub.rest, sub.label)}
-                      >
-                        <Play size={14} /> Lancer le repos
-                      </button>
+                    <div className="mt-3">
+                      <RestTrigger
+                        active={active}
+                        label={sub.label}
+                        seconds={sub.rest}
+                        onStartRest={a.startRest}
+                        onStopRest={a.stopRest}
+                      />
                     </div>
                   )}
                   <div
