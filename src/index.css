@@ -408,7 +408,7 @@ button[aria-current="page"] {
 }
 .set-row .il-input {
   padding: 8px 4px;
-  font-size: 15px;
+  font-size: 16px;
   background: var(--c-bg);
 }
 .set-row:focus-within .il-input {
@@ -464,7 +464,7 @@ button[aria-current="page"] {
   width: 100%;
   padding: 8px 22px 8px 6px;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
   text-align: center;
   cursor: pointer;
@@ -564,7 +564,7 @@ progress::-webkit-progress-value {
 .today-done { display: inline-flex; align-items: center; gap: 6px; color: var(--c-accent-text); font-weight: 600; font-size: 13px; }
 .home-cta { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 58px; border-radius: 999px; background: var(--c-text); color: var(--c-bg); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
 .week-editor-row { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-line); }
-.week-select { width: 100%; min-width: 0; padding: 12px 8px; border: 1px solid var(--c-control-border); border-radius: 9px; background: var(--c-surface); color: var(--c-text); font-size: 15px; }
+.week-select { width: 100%; min-width: 0; padding: 12px 8px; border: 1px solid var(--c-control-border); border-radius: 9px; background: var(--c-surface); color: var(--c-text); font-size: 16px; }
 .week-select:disabled { color: var(--c-text-dim); opacity: .75; }
 .week-empty-library { border-block: 1px solid var(--c-line); padding: 16px 0; margin: 16px 0; }
 
