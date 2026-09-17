@@ -425,7 +425,6 @@ button[aria-current="page"] {
   inset: 0 auto 0 0;
   border-radius: 999px;
   background: var(--c-signal);
-  transition: width 1s linear;
 }
 .rest-progress-dot {
   position: absolute;
@@ -435,7 +434,6 @@ button[aria-current="page"] {
   border-radius: 50%;
   background: var(--c-signal);
   transform: translate(-50%, -50%);
-  transition: left 1s linear;
 }
 .icon-button-sm {
   width: 28px;

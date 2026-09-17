@@ -105,11 +105,17 @@ function RestTrigger({
 }) {
   const isActive = active.restTimer?.label === label;
   const [now, setNow] = useState(() => Date.now());
+  // Per-frame updates (not a 1s interval) so the progress dot visibly
+  // glides instead of jumping once a second.
   useEffect(() => {
     if (!isActive) return;
-    setNow(Date.now());
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
+    let raf;
+    const tick = () => {
+      setNow(Date.now());
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [isActive]);
   // Starting a rest implies the lifter is back and working — resume the
   // session chrono first if it was paused, otherwise the countdown (which
@@ -322,10 +328,16 @@ export default function WorkoutScreen({
                     {entry.sets.length} séries
                     {targetSummary(entry.sets, sub.suffix) &&
                       ` · Reps ${targetSummary(entry.sets, sub.suffix)}`}
-                    {" · "}
-                    {sub.rest === 0
-                      ? "Sans repos"
-                      : `Repos ${fmtRestMMSS(sub.rest ?? 90)}`}
+                    {/* Once expanded, the running rest timer gets its own
+                        block below — repeating it here would duplicate it. */}
+                    {(isCollapsed || !timing || sub.rest === 0) && (
+                      <>
+                        {" · "}
+                        {sub.rest === 0
+                          ? "Sans repos"
+                          : `Repos ${fmtRestMMSS(sub.rest ?? 90)}`}
+                      </>
+                    )}
                   </div>
                   {!isCollapsed && (
                     <>
