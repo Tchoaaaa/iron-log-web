@@ -44,51 +44,46 @@ function SessionTimers({ active, timing, onTogglePause, done, total }) {
     return () => clearInterval(t);
   }, [timing]);
   return (
-    <>
-      {timing && (
-        <div className="timer-panel">
-          <div>
-            <p className="eyebrow">
-              {active.pausedAt != null
-                ? "CHRONOMÈTRE EN PAUSE"
-                : "DURÉE DE SÉANCE"}
-            </p>
-            <p
-              className="il-num text-4xl mt-2"
+    <div>
+      <div className="session-status">
+        {timing && (
+          <span className="flex items-center gap-2">
+            <span
+              className="il-num text-lg font-semibold"
               role="timer"
               aria-label="Durée de la séance"
             >
               {fmtTimer(elapsedSessionMs(active, now))}
-            </p>
-          </div>
-          <button
-            className="icon-button"
-            aria-label={
-              active.pausedAt != null
-                ? "Reprendre le chronomètre"
-                : "Mettre le chronomètre en pause"
-            }
-            onClick={onTogglePause}
-          >
-            {active.pausedAt != null ? <Play size={20} /> : <Pause size={20} />}
-          </button>
-        </div>
-      )}
-      <div>
-        <div className="flex justify-between text-xs muted mb-2">
-          <span>Progression</span>
-          <span className="il-num">
-            {done} / {total} séries validées
+            </span>
+            <button
+              type="button"
+              className="icon-button-sm"
+              aria-label={
+                active.pausedAt != null
+                  ? "Reprendre le chronomètre"
+                  : "Mettre le chronomètre en pause"
+              }
+              onClick={onTogglePause}
+            >
+              {active.pausedAt != null ? (
+                <Play size={14} />
+              ) : (
+                <Pause size={14} />
+              )}
+            </button>
           </span>
-        </div>
-        <progress
-          className="w-full"
-          value={done}
-          max={total || 1}
-          aria-label="Séries validées"
-        />
+        )}
+        <span className="il-num text-xs muted">
+          {done} / {total} séries validées
+        </span>
       </div>
-    </>
+      <progress
+        className="w-full mt-2"
+        value={done}
+        max={total || 1}
+        aria-label="Séries validées"
+      />
+    </div>
   );
 }
 

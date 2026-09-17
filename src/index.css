@@ -392,15 +392,11 @@ button[aria-current="page"] {
   color: var(--c-text-dim);
   flex-shrink: 0;
 }
-.timer-panel {
-  padding: 18px;
+.session-status {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  border: 1px solid var(--c-line);
-  border-radius: 16px;
-  background: var(--c-surface);
+  gap: 12px;
 }
 .rest-line {
   display: flex;
