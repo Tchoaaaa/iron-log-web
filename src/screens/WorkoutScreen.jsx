@@ -6,9 +6,9 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Clock,
   Pause,
   Play,
-  Timer,
   X,
 } from "lucide-react";
 import { SET_GRID } from "../lib/constants";
@@ -260,21 +260,9 @@ export default function WorkoutScreen({
             <div className="flex flex-col gap-5">
               {subs.map((sub) => (
                 <div key={sub.suffix}>
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-lg font-semibold leading-snug">
-                      {sub.label}
-                    </h2>
-                    {timing && sub.rest > 0 && (
-                      <button
-                        type="button"
-                        className="icon-button shrink-0"
-                        aria-label={`Démarrer le repos de ${sub.label}`}
-                        onClick={() => a.startRest(sub.rest, sub.label)}
-                      >
-                        <Timer size={16} />
-                      </button>
-                    )}
-                  </div>
+                  <h2 className="text-lg font-semibold leading-snug">
+                    {sub.label}
+                  </h2>
                   <div className="muted text-xs mt-1.5">
                     {entry.sets.length} séries
                     {targetSummary(entry.sets, sub.suffix) &&
@@ -286,6 +274,27 @@ export default function WorkoutScreen({
                   </div>
                   {!isCollapsed && (
                     <>
+                  {timing && sub.rest > 0 && (
+                    <div className="rest-trigger mt-3">
+                      <div className="flex items-center gap-2.5">
+                        <Clock size={18} className="muted" aria-hidden="true" />
+                        <div>
+                          <p className="muted text-xs">Temps de repos</p>
+                          <p className="il-num text-lg font-semibold mt-0.5">
+                            {fmtRestMMSS(sub.rest)}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="secondary compact"
+                        aria-label={`Démarrer le repos de ${sub.label}`}
+                        onClick={() => a.startRest(sub.rest, sub.label)}
+                      >
+                        <Play size={14} /> Lancer le repos
+                      </button>
+                    </div>
+                  )}
                   <div
                     className="grid mt-3 mb-1.5 text-[10px] muted uppercase"
                     style={{ gridTemplateColumns: setGrid, gap: 6 }}

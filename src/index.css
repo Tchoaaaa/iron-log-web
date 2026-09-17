@@ -403,6 +403,16 @@ button[aria-current="page"] {
   border-radius: 16px;
   background: var(--c-surface);
 }
+.rest-trigger {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--c-line);
+  border-radius: 14px;
+  background: var(--c-surface-raised);
+}
 .rest-panel {
   background: var(--c-surface-raised);
 }
