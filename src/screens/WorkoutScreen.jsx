@@ -21,12 +21,14 @@ import SetRpeField from "../components/SetRpeField";
 import { rpeEnabled } from "../lib/rpe";
 
 // Collapses per-set rep targets into one label: "8" when every set shares
-// the same target, "6-8/6-8/10-12" when they differ.
+// the same target, "6–8 / 6–8 / 10–12" when they differ.
 function targetSummary(sets, suffix) {
   const values = sets.map((s) => s["target" + suffix]).filter(Boolean);
   if (!values.length) return null;
   const unique = [...new Set(values)];
-  return unique.length === 1 ? unique[0] : values.join("/");
+  return (unique.length === 1 ? unique : values)
+    .map((v) => v.replace("-", "–"))
+    .join(" / ");
 }
 
 // Owns the only 1-second tick for the session chrono. Kept local to this
@@ -316,14 +318,14 @@ export default function WorkoutScreen({
                   <h2 className="text-lg font-semibold leading-snug">
                     {sub.label}
                   </h2>
-                  <div className="muted text-xs mt-1.5">
+                  <div className="eyebrow mt-1.5">
                     {entry.sets.length} séries
                     {targetSummary(entry.sets, sub.suffix) &&
-                      ` · ${targetSummary(entry.sets, sub.suffix)} reps`}{" "}
-                    ·{" "}
+                      ` · Reps ${targetSummary(entry.sets, sub.suffix)}`}
+                    {" · "}
                     {sub.rest === 0
                       ? "Sans repos"
-                      : `${fmtRestMMSS(sub.rest ?? 90)} de repos`}
+                      : `Repos ${fmtRestMMSS(sub.rest ?? 90)}`}
                   </div>
                   {!isCollapsed && (
                     <>
