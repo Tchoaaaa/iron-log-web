@@ -21,6 +21,15 @@ import { useExercisePicker } from "../hooks/useExercisePicker";
 import SetRpeField from "../components/SetRpeField";
 import { rpeEnabled } from "../lib/rpe";
 
+// Collapses per-set rep targets into one label: "8" when every set shares
+// the same target, "6-8/6-8/10-12" when they differ.
+function targetSummary(sets, suffix) {
+  const values = sets.map((s) => s["target" + suffix]).filter(Boolean);
+  if (!values.length) return null;
+  const unique = [...new Set(values)];
+  return unique.length === 1 ? unique[0] : values.join("/");
+}
+
 // Owns the only 1-second tick on this screen (session chrono + rest
 // countdown). Kept local to this component — and out of useActiveSession —
 // so the once-a-second re-render stays scoped to this small panel instead
@@ -287,7 +296,10 @@ export default function WorkoutScreen({
                     {sub.label}
                   </h2>
                   <div className="muted text-xs mt-1.5">
-                    {entry.sets.length} séries ·{" "}
+                    {entry.sets.length} séries
+                    {targetSummary(entry.sets, sub.suffix) &&
+                      ` · ${targetSummary(entry.sets, sub.suffix)} reps`}{" "}
+                    ·{" "}
                     {sub.rest === 0
                       ? "Sans repos"
                       : `${fmtRestMMSS(sub.rest ?? 90)} de repos`}
@@ -330,111 +342,105 @@ export default function WorkoutScreen({
                         }
                       };
                       return (
-                        <div key={i}>
-                          <div
-                            className={`grid items-center set-row ${validated ? "completed" : ""}`}
-                            style={{ gridTemplateColumns: setGrid, gap: 6 }}
+                        <div
+                          key={i}
+                          className={`grid items-center set-row ${validated ? "completed" : ""}`}
+                          style={{ gridTemplateColumns: setGrid, gap: 6 }}
+                        >
+                          <button
+                            className={`set-check ${validated ? "checked" : ""}`}
+                            disabled={!validated && !canValidate}
+                            aria-label={`${validated ? "Dévalider" : "Valider"} ${sub.label}, série ${i + 1}`}
+                            aria-pressed={validated}
+                            title={
+                              canValidate
+                                ? "Valider cette série"
+                                : "Renseigne une charge (0 accepté) et les répétitions"
+                            }
+                            onClick={() =>
+                              a.completeSet(
+                                entry.id,
+                                i,
+                                "done" + sub.suffix,
+                                sub.rest,
+                                sub.label,
+                              )
+                            }
                           >
-                            <button
-                              className={`set-check ${validated ? "checked" : ""}`}
-                              disabled={!validated && !canValidate}
-                              aria-label={`${validated ? "Dévalider" : "Valider"} ${sub.label}, série ${i + 1}`}
-                              aria-pressed={validated}
-                              title={
-                                canValidate
-                                  ? "Valider cette série"
-                                  : "Renseigne une charge (0 accepté) et les répétitions"
-                              }
-                              onClick={() =>
-                                a.completeSet(
+                            {validated ? <Check size={16} /> : <span>{i + 1}</span>}
+                          </button>
+                          <span className="il-num muted text-[10px] text-center">
+                            {previous
+                              ? `${previous.weight}×${previous.reps}`
+                              : "—"}
+                          </span>
+                          <input
+                            className="il-input il-num w-full text-center"
+                            aria-label={`${sub.label}, série ${i + 1}, charge en kg`}
+                            type="number"
+                            min="0"
+                            step="any"
+                            inputMode="decimal"
+                            placeholder={
+                              previous ? String(previous.weight) : "—"
+                            }
+                            value={set["weight" + sub.suffix]}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              updateSet(
+                                entry.id,
+                                i,
+                                "weight" + sub.suffix,
+                                value,
+                              );
+                              if (validated) {
+                                updateSet(
                                   entry.id,
                                   i,
                                   "done" + sub.suffix,
-                                  sub.rest,
-                                  sub.label,
-                                )
+                                  false,
+                                );
                               }
-                            >
-                              {validated ? <Check size={16} /> : <span>{i + 1}</span>}
-                            </button>
-                            <span className="il-num muted text-[10px] text-center">
-                              {previous
-                                ? `${previous.weight}×${previous.reps}`
-                                : "—"}
-                            </span>
-                            <input
-                              className="il-input il-num w-full text-center"
-                              aria-label={`${sub.label}, série ${i + 1}, charge en kg`}
-                              type="number"
-                              min="0"
-                              step="any"
-                              inputMode="decimal"
-                              placeholder={
-                                previous ? String(previous.weight) : "—"
-                              }
-                              value={set["weight" + sub.suffix]}
-                              onChange={(e) => {
-                                const value = e.target.value;
+                            }}
+                            onBlur={autoValidate}
+                          />
+                          <input
+                            className="il-input il-num w-full text-center"
+                            aria-label={`${sub.label}, série ${i + 1}, répétitions réalisées`}
+                            type="number"
+                            min="1"
+                            step="1"
+                            inputMode="numeric"
+                            placeholder={
+                              target ||
+                              (previous ? String(previous.reps) : "—")
+                            }
+                            value={set["reps" + sub.suffix]}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              updateSet(
+                                entry.id,
+                                i,
+                                "reps" + sub.suffix,
+                                value,
+                              );
+                              if (validated) {
                                 updateSet(
                                   entry.id,
                                   i,
-                                  "weight" + sub.suffix,
-                                  value,
+                                  "done" + sub.suffix,
+                                  false,
                                 );
-                                if (validated) {
-                                  updateSet(
-                                    entry.id,
-                                    i,
-                                    "done" + sub.suffix,
-                                    false,
-                                  );
-                                }
-                              }}
-                              onBlur={autoValidate}
-                            />
-                            <input
-                              className="il-input il-num w-full text-center"
-                              aria-label={`${sub.label}, série ${i + 1}, répétitions réalisées`}
-                              type="number"
-                              min="1"
-                              step="1"
-                              inputMode="numeric"
-                              placeholder={
-                                target ||
-                                (previous ? String(previous.reps) : "—")
                               }
-                              value={set["reps" + sub.suffix]}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                updateSet(
-                                  entry.id,
-                                  i,
-                                  "reps" + sub.suffix,
-                                  value,
-                                );
-                                if (validated) {
-                                  updateSet(
-                                    entry.id,
-                                    i,
-                                    "done" + sub.suffix,
-                                    false,
-                                  );
-                                }
-                              }}
-                              onBlur={autoValidate}
+                            }}
+                            onBlur={autoValidate}
+                          />
+                          {showRpe && (
+                            <SetRpeField
+                              label={`${sub.label}, série ${i + 1}, RPE ressenti`}
+                              value={set["rpe" + sub.suffix]}
+                              onChange={(value) => updateSet(entry.id, i, "rpe" + sub.suffix, value)}
                             />
-                            {showRpe && (
-                              <SetRpeField
-                                label={`${sub.label}, série ${i + 1}, RPE ressenti`}
-                                value={set["rpe" + sub.suffix]}
-                                onChange={(value) => updateSet(entry.id, i, "rpe" + sub.suffix, value)}
-                              />
-                            )}
-                          </div>
-                          {target && (
-                            <p className="muted text-[10px] text-right mt-1 pr-10">
-                              Objectif : {target} reps
-                            </p>
                           )}
                         </div>
                       );
