@@ -392,8 +392,7 @@ button[aria-current="page"] {
   color: var(--c-text-dim);
   flex-shrink: 0;
 }
-.timer-panel,
-.rest-panel {
+.timer-panel {
   padding: 18px;
   display: flex;
   align-items: center;
@@ -403,18 +402,17 @@ button[aria-current="page"] {
   border-radius: 16px;
   background: var(--c-surface);
 }
-.rest-trigger {
-  padding: 14px 16px;
+.rest-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border: 1px solid var(--c-line);
-  border-radius: 14px;
-  background: var(--c-surface-raised);
+  gap: 8px;
 }
-.rest-panel {
-  background: var(--c-surface-raised);
+.rest-action {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-dim);
 }
 .rest-progress-track {
   position: relative;
@@ -427,6 +425,7 @@ button[aria-current="page"] {
   inset: 0 auto 0 0;
   border-radius: 999px;
   background: var(--c-signal);
+  transition: width 1s linear;
 }
 .rest-progress-dot {
   position: absolute;
@@ -436,6 +435,7 @@ button[aria-current="page"] {
   border-radius: 50%;
   background: var(--c-signal);
   transform: translate(-50%, -50%);
+  transition: left 1s linear;
 }
 .icon-button-sm {
   width: 28px;

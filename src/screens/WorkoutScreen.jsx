@@ -6,7 +6,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  Clock,
   Pause,
   Play,
   X,
@@ -120,23 +119,15 @@ function RestTrigger({
   };
   if (!isActive) {
     return (
-      <div className="rest-trigger">
-        <div className="flex items-center gap-2.5">
-          <Clock size={18} className="muted" aria-hidden="true" />
-          <div>
-            <p className="muted text-xs">Temps de repos</p>
-            <p className="il-num text-lg font-semibold mt-0.5">
-              {fmtRestMMSS(seconds)}
-            </p>
-          </div>
-        </div>
+      <div className="rest-line">
+        <span className="eyebrow">Repos {fmtRestMMSS(seconds)}</span>
         <button
           type="button"
-          className="secondary compact"
+          className="text-button rest-action"
           aria-label={`Démarrer le repos de ${label}`}
           onClick={() => startFor(seconds)}
         >
-          <Play size={14} /> Lancer le repos
+          Lancer
         </button>
       </div>
     );
@@ -147,14 +138,12 @@ function RestTrigger({
     Math.max(0, 100 - (remaining / (seconds * 1000)) * 100),
   );
   return (
-    <div className="rest-progress">
-      <div className="flex items-baseline justify-between">
-        <p className="eyebrow">
-          {remaining ? "Repos en cours" : "Repos terminé"}
-        </p>
-        <p className="il-num text-lg font-semibold" role="timer">
+    <div>
+      <div className="rest-line">
+        <span className="eyebrow">{remaining ? "Repos" : "Repos terminé"}</span>
+        <span className="il-num text-lg font-semibold" role="timer">
           {fmtTimer(remaining)}
-        </p>
+        </span>
       </div>
       <div className="rest-progress-track mt-2">
         <div
@@ -166,10 +155,10 @@ function RestTrigger({
           style={{ left: `${progressPct}%` }}
         />
       </div>
-      <div className="flex items-center justify-between mt-2">
+      <div className="rest-line mt-2">
         <button
           type="button"
-          className="text-button text-xs"
+          className="text-button rest-action"
           onClick={() =>
             startFor(Math.max(1, Math.round(remaining / 1000)) + 15)
           }
@@ -178,7 +167,7 @@ function RestTrigger({
         </button>
         <button
           type="button"
-          className="text-button text-xs"
+          className="text-button rest-action"
           onClick={() => startFor(seconds)}
         >
           Relancer
