@@ -5,6 +5,16 @@ import { REST_OPTIONS } from "../lib/constants";
 import { formatRest } from "../lib/format";
 import { hasSetRpe } from "../lib/rpe";
 
+// A rep target is a single count ("8") or a range ("6-8").
+function isValidTarget(v) {
+  const match = /^(\d{1,3})(?:-(\d{1,3}))?$/.exec(String(v).trim());
+  if (!match) return false;
+  const [, min, max] = match;
+  if (Number(min) < 1 || Number(min) > 999) return false;
+  if (max == null) return true;
+  return Number(max) >= Number(min) && Number(max) <= 999;
+}
+
 // Accent-insensitive search — "developpe" should find "Développé couché".
 const foldAccents = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -42,16 +52,9 @@ export default function ExercisePickerModal({
       ...plan.targets.slice(0, plan.count),
       ...(superSet ? plan.targetsB.slice(0, plan.count) : []),
     ];
-    if (
-      values.some(
-        (v) =>
-          v !== "" &&
-          v != null &&
-          (!Number.isInteger(Number(v)) || Number(v) < 1 || Number(v) > 999),
-      )
-    )
+    if (values.some((v) => v !== "" && v != null && !isValidTarget(v)))
       return setError(
-        "Les répétitions doivent être des entiers entre 1 et 999, ou rester vides.",
+        "Les répétitions doivent être un entier (ex. 8) ou une fourchette (ex. 6-8) entre 1 et 999, ou rester vides.",
       );
     if (
       Array.isArray(original?.sets) &&
@@ -224,13 +227,10 @@ export default function ExercisePickerModal({
                       <input
                         key={field}
                         className="il-input il-num"
-                        type="number"
-                        min="1"
-                        max="999"
-                        step="1"
-                        inputMode="numeric"
+                        type="text"
+                        inputMode="text"
                         aria-label={`Répétitions série ${i + 1}${superSet ? (field === "targets" ? " exercice 1" : " exercice 2") : ""}`}
-                        placeholder="Libre"
+                        placeholder="Libre, ex. 6-8"
                         value={plan[field][i] ?? ""}
                         onChange={(e) => {
                           const next = [...plan[field]];
