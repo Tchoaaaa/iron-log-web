@@ -94,7 +94,14 @@ function SessionTimers({ active, timing, onTogglePause, done, total }) {
 // A rest timer for one exercise, inline where it's started — no separate
 // panel elsewhere on the screen. Only ticks its own 1-second interval while
 // its own rest is the active one, so idle exercises don't re-render.
-function RestTrigger({ active, label, seconds, onStartRest, onStopRest }) {
+function RestTrigger({
+  active,
+  label,
+  seconds,
+  onStartRest,
+  onStopRest,
+  onTogglePause,
+}) {
   const isActive = active.restTimer?.label === label;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -103,6 +110,14 @@ function RestTrigger({ active, label, seconds, onStartRest, onStopRest }) {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [isActive]);
+  // Starting a rest implies the lifter is back and working — resume the
+  // session chrono first if it was paused, otherwise the countdown (which
+  // freezes while paused, same as the chrono) would look stuck at its
+  // starting value.
+  const startFor = (totalSeconds) => {
+    if (active.pausedAt != null) onTogglePause();
+    onStartRest(totalSeconds, label);
+  };
   if (!isActive) {
     return (
       <div className="rest-trigger">
@@ -119,7 +134,7 @@ function RestTrigger({ active, label, seconds, onStartRest, onStopRest }) {
           type="button"
           className="secondary compact"
           aria-label={`Démarrer le repos de ${label}`}
-          onClick={() => onStartRest(seconds, label)}
+          onClick={() => startFor(seconds)}
         >
           <Play size={14} /> Lancer le repos
         </button>
@@ -127,33 +142,54 @@ function RestTrigger({ active, label, seconds, onStartRest, onStopRest }) {
     );
   }
   const remaining = restRemainingMs(active, now);
+  const progressPct = Math.min(
+    100,
+    Math.max(0, 100 - (remaining / (seconds * 1000)) * 100),
+  );
   return (
-    <div className="rest-trigger">
-      <div className="flex items-center gap-2.5">
-        <Clock size={18} className="muted" aria-hidden="true" />
-        <div>
-          <p className="muted text-xs">
-            {remaining ? "Repos en cours" : "Repos terminé"}
-          </p>
-          <p className="il-num text-lg font-semibold mt-0.5" role="timer">
-            {fmtTimer(remaining)}
-          </p>
-        </div>
+    <div className="rest-progress">
+      <div className="flex items-baseline justify-between">
+        <p className="eyebrow">
+          {remaining ? "Repos en cours" : "Repos terminé"}
+        </p>
+        <p className="il-num text-lg font-semibold" role="timer">
+          {fmtTimer(remaining)}
+        </p>
       </div>
-      <div className="flex flex-col gap-2 items-end">
+      <div className="rest-progress-track mt-2">
+        <div
+          className="rest-progress-fill"
+          style={{ width: `${progressPct}%` }}
+        />
+        <div
+          className="rest-progress-dot"
+          style={{ left: `${progressPct}%` }}
+        />
+      </div>
+      <div className="flex items-center justify-between mt-2">
         <button
           type="button"
-          className="secondary compact"
-          onClick={() => onStartRest(seconds, label)}
+          className="text-button text-xs"
+          onClick={() =>
+            startFor(Math.max(1, Math.round(remaining / 1000)) + 15)
+          }
+        >
+          +15 sec
+        </button>
+        <button
+          type="button"
+          className="text-button text-xs"
+          onClick={() => startFor(seconds)}
         >
           Relancer
         </button>
         <button
           type="button"
-          className="text-button text-xs"
+          className="icon-button-sm"
+          aria-label="Arrêter le repos"
           onClick={onStopRest}
         >
-          <X size={14} /> Fermer
+          <X size={14} />
         </button>
       </div>
     </div>
@@ -310,6 +346,7 @@ export default function WorkoutScreen({
                         seconds={sub.rest}
                         onStartRest={a.startRest}
                         onStopRest={a.stopRest}
+                        onTogglePause={a.togglePause}
                       />
                     </div>
                   )}
