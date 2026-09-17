@@ -37,8 +37,6 @@ function targetSummary(sets, suffix) {
 function SessionTimers({
   active,
   timing,
-  manualRest,
-  onManualRestChange,
   onTogglePause,
   onStartRest,
   onStopRest,
@@ -99,60 +97,33 @@ function SessionTimers({
           aria-label="Séries validées"
         />
       </div>
-      {timing && (
+      {timing && rest && (
         <div className="rest-panel">
-          {rest ? (
-            <>
-              <div>
-                <p className="eyebrow">
-                  {remaining ? "TEMPS DE REPOS" : "REPOS TERMINÉ"}
-                </p>
-                <p className="il-num text-3xl mt-1" role="timer">
-                  {fmtTimer(remaining)}
-                </p>
-                <p className="muted text-xs mt-1">{rest.label}</p>
-                {remaining === 0 && (
-                  <span role="status" className="text-sm">
-                    Prêt pour la prochaine série.
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <button
-                  className="secondary compact"
-                  onClick={() => onStartRest(rest.seconds, rest.label)}
-                >
-                  Relancer
-                </button>
-                <button className="text-button text-xs" onClick={onStopRest}>
-                  <X size={14} /> Fermer
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <label className="field">
-                Repos manuel
-                <select
-                  className="il-input"
-                  value={manualRest}
-                  onChange={(e) => onManualRestChange(Number(e.target.value))}
-                >
-                  {[30, 60, 90, 120, 180, 300].map((s) => (
-                    <option key={s} value={s}>
-                      {fmtRestMMSS(s)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                className="secondary compact"
-                onClick={() => onStartRest(manualRest)}
-              >
-                <Timer size={16} /> Démarrer
-              </button>
-            </>
-          )}
+          <div>
+            <p className="eyebrow">
+              {remaining ? "TEMPS DE REPOS" : "REPOS TERMINÉ"}
+            </p>
+            <p className="il-num text-3xl mt-1" role="timer">
+              {fmtTimer(remaining)}
+            </p>
+            <p className="muted text-xs mt-1">{rest.label}</p>
+            {remaining === 0 && (
+              <span role="status" className="text-sm">
+                Prêt pour la prochaine série.
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <button
+              className="secondary compact"
+              onClick={() => onStartRest(rest.seconds, rest.label)}
+            >
+              Relancer
+            </button>
+            <button className="text-button text-xs" onClick={onStopRest}>
+              <X size={14} /> Fermer
+            </button>
+          </div>
         </div>
       )}
     </>
@@ -171,7 +142,6 @@ export default function WorkoutScreen({
   const [editingId, setEditingId] = useState(null);
   const [discard, setDiscard] = useState(false);
   const [remove, setRemove] = useState(null);
-  const [manualRest, setManualRest] = useState(90);
   const [collapsed, setCollapsed] = useState(() => new Set());
   const toggleCollapsed = (id) =>
     setCollapsed((prev) => {
@@ -213,8 +183,6 @@ export default function WorkoutScreen({
       <SessionTimers
         active={active}
         timing={timing}
-        manualRest={manualRest}
-        onManualRestChange={setManualRest}
         onTogglePause={a.togglePause}
         onStartRest={a.startRest}
         onStopRest={a.stopRest}
@@ -292,9 +260,21 @@ export default function WorkoutScreen({
             <div className="flex flex-col gap-5">
               {subs.map((sub) => (
                 <div key={sub.suffix}>
-                  <h2 className="text-lg font-semibold leading-snug">
-                    {sub.label}
-                  </h2>
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-lg font-semibold leading-snug">
+                      {sub.label}
+                    </h2>
+                    {timing && sub.rest > 0 && (
+                      <button
+                        type="button"
+                        className="icon-button shrink-0"
+                        aria-label={`Démarrer le repos de ${sub.label}`}
+                        onClick={() => a.startRest(sub.rest, sub.label)}
+                      >
+                        <Timer size={16} />
+                      </button>
+                    )}
+                  </div>
                   <div className="muted text-xs mt-1.5">
                     {entry.sets.length} séries
                     {targetSummary(entry.sets, sub.suffix) &&
