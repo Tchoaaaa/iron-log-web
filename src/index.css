@@ -422,9 +422,12 @@ button[aria-current="page"] {
 }
 .rest-progress-fill {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
+  width: 100%;
   border-radius: 999px;
   background: var(--c-signal);
+  transform-origin: left center;
+  will-change: transform;
 }
 .rest-progress-dot {
   position: absolute;
@@ -434,6 +437,7 @@ button[aria-current="page"] {
   border-radius: 50%;
   background: var(--c-signal);
   transform: translate(-50%, -50%);
+  will-change: left;
 }
 .icon-button-sm {
   width: 28px;

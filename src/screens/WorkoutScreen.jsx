@@ -156,7 +156,7 @@ function RestTrigger({
       <div className="rest-progress-track mt-2">
         <div
           className="rest-progress-fill"
-          style={{ width: `${progressPct}%` }}
+          style={{ transform: `scaleX(${progressPct / 100})` }}
         />
         <div
           className="rest-progress-dot"
@@ -335,7 +335,7 @@ export default function WorkoutScreen({
                         {" · "}
                         {sub.rest === 0
                           ? "Sans repos"
-                          : `Repos ${fmtRestMMSS(sub.rest ?? 90)}`}
+                          : fmtRestMMSS(sub.rest ?? 90)}
                       </>
                     )}
                   </div>
