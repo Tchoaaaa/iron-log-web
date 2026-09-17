@@ -427,11 +427,13 @@ button[aria-current="page"] {
   border-radius: 999px;
   background: var(--c-signal);
   transform-origin: left center;
+  transform: scaleX(0);
   will-change: transform;
 }
 .rest-progress-dot {
   position: absolute;
   top: 50%;
+  left: 0;
   width: 10px;
   height: 10px;
   border-radius: 50%;

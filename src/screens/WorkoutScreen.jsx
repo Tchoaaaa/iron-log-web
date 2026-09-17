@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Plus,
@@ -105,18 +105,52 @@ function RestTrigger({
 }) {
   const isActive = active.restTimer?.label === label;
   const [now, setNow] = useState(() => Date.now());
-  // Per-frame updates (not a 1s interval) so the progress dot visibly
-  // glides instead of jumping once a second.
+  // The digits only need a 1s tick. The bar itself is NOT driven by this —
+  // see the effect below — a React re-render every frame is what looked
+  // "saccadé": even with requestAnimationFrame, re-rendering and diffing a
+  // whole subtree 60×/s is itself uneven. A single CSS transition, handed
+  // off to the compositor once per rest and left alone, glides properly.
   useEffect(() => {
     if (!isActive) return;
-    let raf;
-    const tick = () => {
-      setNow(Date.now());
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
   }, [isActive]);
+  const fillRef = useRef(null);
+  const dotRef = useRef(null);
+  const endsAt = active.restTimer?.endsAt;
+  const pausedAt = active.pausedAt;
+  // Layout effect: runs before paint, so the bar never flashes at its
+  // pre-effect default (fully filled) for a frame. Deliberately keyed on
+  // endsAt/pausedAt rather than `active` itself — reacting to every
+  // unrelated session update (typing a weight elsewhere) would restart
+  // the animation each time instead of only when the rest actually changes.
+  useLayoutEffect(() => {
+    if (!isActive) return;
+    const fill = fillRef.current;
+    const dot = dotRef.current;
+    if (!fill || !dot) return;
+    const remainingMs = restRemainingMs(active, Date.now());
+    const totalMs = seconds * 1000;
+    const startPct = Math.min(
+      100,
+      Math.max(0, 100 - (remainingMs / totalMs) * 100),
+    );
+    // Jump to the accurate current position with transitions off, then
+    // force the browser to commit that frame before re-enabling them —
+    // otherwise it can coalesce both style writes and skip the animation.
+    fill.style.transition = "none";
+    dot.style.transition = "none";
+    fill.style.transform = `scaleX(${startPct / 100})`;
+    dot.style.left = `${startPct}%`;
+    if (pausedAt != null || remainingMs <= 0) return;
+    void fill.offsetWidth;
+    const remainingSec = remainingMs / 1000;
+    fill.style.transition = `transform ${remainingSec}s linear`;
+    dot.style.transition = `left ${remainingSec}s linear`;
+    fill.style.transform = "scaleX(1)";
+    dot.style.left = "100%";
+  }, [isActive, endsAt, seconds, pausedAt]);
   // Starting a rest implies the lifter is back and working — resume the
   // session chrono first if it was paused, otherwise the countdown (which
   // freezes while paused, same as the chrono) would look stuck at its
@@ -141,10 +175,6 @@ function RestTrigger({
     );
   }
   const remaining = restRemainingMs(active, now);
-  const progressPct = Math.min(
-    100,
-    Math.max(0, 100 - (remaining / (seconds * 1000)) * 100),
-  );
   return (
     <div>
       <div className="rest-line">
@@ -154,14 +184,8 @@ function RestTrigger({
         </span>
       </div>
       <div className="rest-progress-track mt-2">
-        <div
-          className="rest-progress-fill"
-          style={{ transform: `scaleX(${progressPct / 100})` }}
-        />
-        <div
-          className="rest-progress-dot"
-          style={{ left: `${progressPct}%` }}
-        />
+        <div ref={fillRef} className="rest-progress-fill" />
+        <div ref={dotRef} className="rest-progress-dot" />
       </div>
       <div className="rest-line mt-2">
         <button
