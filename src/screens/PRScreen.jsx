@@ -21,16 +21,16 @@ export default function PRScreen({ workouts, exercises, muscle, onMuscle, onExer
   const visible = muscle ? categorized.filter(record => record.muscle === muscle) : categorized;
   return (
     <section>
-      <h2 className="eyebrow mb-3">MES RECORDS</h2>
+      <h2 className="eyebrow mb-3">MES PR</h2>
       <p className="muted text-xs mb-5">
         Meilleure charge, puis répétitions à charge égale · toutes périodes.
       </p>
       {records.length > 0 && (
         <div className="records-filter">
-          <p className="muted text-xs" role="status">{visible.length} record{visible.length > 1 ? "s" : ""}</p>
+          <p className="muted text-xs" role="status">{visible.length} PR</p>
           <label className="field">
             Muscle
-            <select className="il-input" aria-label="Filtrer les records par muscle" value={muscle} onChange={event => onMuscle(event.target.value)}>
+            <select className="il-input" aria-label="Filtrer les PR par muscle" value={muscle} onChange={event => onMuscle(event.target.value)}>
               <option value="">Tous</option>
               {muscle && !groups.includes(muscle) && <option value={muscle}>{muscle}</option>}
               {groups.map(group => <option key={group} value={group}>{group}</option>)}
@@ -47,7 +47,7 @@ export default function PRScreen({ workouts, exercises, muscle, onMuscle, onExer
         </div>
       ) : !visible.length ? (
         <div className="empty-state">
-          <h2>Aucun record pour ce muscle.</h2>
+          <h2>Aucun PR pour ce muscle.</h2>
           <button className="text-button" onClick={() => onMuscle("")}>Voir tous les muscles</button>
         </div>
       ) : (

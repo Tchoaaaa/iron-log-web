@@ -281,7 +281,7 @@ export default function WorkoutScreen({
         const superSet = entry.kind === "superset";
         const showRpe = rpeEnabled(entry);
         const setGrid = showRpe
-          ? "30px minmax(26px, 0.45fr) minmax(0, 0.92fr) minmax(0, 0.92fr) minmax(64px, 0.9fr)"
+          ? "30px minmax(0, 0.92fr) minmax(0, 0.92fr) minmax(64px, 0.9fr)"
           : SET_GRID;
         const subs = superSet
           ? [
@@ -376,8 +376,7 @@ export default function WorkoutScreen({
                     className="grid mt-3 mb-1.5 text-[10px] muted uppercase"
                     style={{ gridTemplateColumns: setGrid, gap: 6 }}
                   >
-                    <span>#</span>
-                    <span className="text-center">Préc.</span>
+                    <span>Set</span>
                     <span className="text-center">Kg</span>
                     <span className="text-center">Reps</span>
                     {showRpe && <span className="text-center">RPE</span>}
@@ -435,11 +434,6 @@ export default function WorkoutScreen({
                           >
                             {validated ? <Check size={16} /> : <span>{i + 1}</span>}
                           </button>
-                          <span className="il-num muted text-[10px] text-center">
-                            {previous
-                              ? `${previous.weight}×${previous.reps}`
-                              : "—"}
-                          </span>
                           <input
                             className="il-input il-num w-full text-center"
                             aria-label={`${sub.label}, série ${i + 1}, charge en kg`}
