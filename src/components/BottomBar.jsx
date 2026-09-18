@@ -43,37 +43,35 @@ export default function BottomBar({ tab, active, templateDraft, finishing, onFin
           style={{ background: C.amber, color: C.signalInk, letterSpacing: "0.06em", opacity: finishing ? 0.6 : 1 }}
           className="w-full py-3.5 rounded-full font-semibold text-sm uppercase"
         >
-          {finishing ? "…" : active?.editId ? "Enregistrer les modifications" : "Terminer la séance"}
+          {finishing ? "…" : active?.editId ? "Save changes" : "Finish workout"}
         </button>
       </div>
       {confirmFinish && (
         <Drawer
-          title="Terminer la séance ?"
+          title="Finish workout?"
           onClose={() => setConfirmFinish(false)}
           busy={finishing}
         >
           {incomplete.length > 0 ? (
             <div className="mb-5">
               <p className="text-sm mb-2">
-                {incomplete.length} série{incomplete.length > 1 ? "s" : ""}{" "}
-                incomplète{incomplete.length > 1 ? "s" : ""} ne{" "}
-                {incomplete.length > 1 ? "seront" : "sera"} pas enregistrée
-                {incomplete.length > 1 ? "s" : ""} :
+                {incomplete.length} incomplete set
+                {incomplete.length > 1 ? "s" : ""} won't be saved:
               </p>
               <ul className="muted text-sm mb-3" style={{ paddingLeft: 18, listStyle: "disc" }}>
                 {incomplete.map((row, i) => (
                   <li key={i}>
-                    {row.name}, série {row.setIndex}
+                    {row.name}, set {row.setIndex}
                   </li>
                 ))}
               </ul>
               <p className="muted text-sm">
-                Renseigne charge et répétitions pour les garder, ou termine sans elles.
+                Enter a weight and reps to keep them, or finish without them.
               </p>
             </div>
           ) : (
             <p className="muted text-sm mb-5">
-              Vérifie que tu as bien saisi toutes tes séries avant de terminer.
+              Make sure you've logged all your sets before finishing.
             </p>
           )}
           <div className="flex flex-col gap-3">
@@ -82,14 +80,14 @@ export default function BottomBar({ tab, active, templateDraft, finishing, onFin
               disabled={finishing}
               onClick={() => setConfirmFinish(false)}
             >
-              Continuer la séance
+              Continue workout
             </button>
             <button
               className="primary"
               disabled={finishing}
               onClick={confirmWorkoutFinish}
             >
-              {finishing ? "Enregistrement…" : "Oui, terminer la séance"}
+              {finishing ? "Saving…" : "Yes, finish workout"}
             </button>
           </div>
         </Drawer>
@@ -118,10 +116,10 @@ export default function BottomBar({ tab, active, templateDraft, finishing, onFin
       }}
       className="flex"
     >
-      <NavBtn id="home" icon={Home} label="Accueil" active={tab === "home"} onSelect={onSelectTab} />
-      <NavBtn id="templates" icon={ClipboardList} label="Séances" active={tab === "templates"} onSelect={onSelectTab} />
-      <NavBtn id="performance" icon={ChartNoAxesCombined} label="Performance" active={tab === "performance"} onSelect={onSelectTab} />
-      <NavBtn id="profile" icon={UserRound} label="Profil" active={tab === "profile"} onSelect={onSelectTab} />
+      <NavBtn id="home" icon={Home} label="HOME" active={tab === "home"} onSelect={onSelectTab} />
+      <NavBtn id="templates" icon={ClipboardList} label="TRAINING" active={tab === "templates"} onSelect={onSelectTab} />
+      <NavBtn id="performance" icon={ChartNoAxesCombined} label="RECORDS" active={tab === "performance"} onSelect={onSelectTab} />
+      <NavBtn id="profile" icon={UserRound} label="PROFIL" active={tab === "profile"} onSelect={onSelectTab} />
     </div>
   );
 }

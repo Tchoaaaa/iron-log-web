@@ -14,7 +14,7 @@ export default function ExerciseNoteField({ label, value, onType, onCommit }) {
         rows={2}
         className="il-input rounded-lg px-2.5 py-2 w-full mt-3"
         style={{ resize: "none", fontSize: "12px" }}
-        placeholder={label ? `Note — ${label}` : "Réglages, ressenti, remarque…"}
+        placeholder={label ? `Note — ${label}` : "Setup, how it felt, notes…"}
         value={value}
         onChange={(e) => onType(e.target.value)}
         onBlur={(e) => {
