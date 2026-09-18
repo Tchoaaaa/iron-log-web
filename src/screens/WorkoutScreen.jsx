@@ -51,7 +51,7 @@ function SessionTimers({ active, timing, onTogglePause, done, total }) {
             <span
               className="il-num text-lg font-semibold"
               role="timer"
-              aria-label="Workout duration"
+              aria-label="Durée de la séance"
             >
               {fmtTimer(elapsedSessionMs(active, now))}
             </span>
@@ -59,7 +59,9 @@ function SessionTimers({ active, timing, onTogglePause, done, total }) {
               type="button"
               className="icon-button-sm"
               aria-label={
-                active.pausedAt != null ? "Resume timer" : "Pause timer"
+                active.pausedAt != null
+                  ? "Reprendre le chronomètre"
+                  : "Mettre le chronomètre en pause"
               }
               onClick={onTogglePause}
             >
@@ -72,14 +74,14 @@ function SessionTimers({ active, timing, onTogglePause, done, total }) {
           </span>
         )}
         <span className="il-num text-xs muted">
-          {done} / {total} sets done
+          {done} / {total} séries validées
         </span>
       </div>
       <progress
         className="w-full mt-2"
         value={done}
         max={total || 1}
-        aria-label="Sets done"
+        aria-label="Séries validées"
       />
     </div>
   );
@@ -155,14 +157,14 @@ function RestTrigger({
   if (!isActive) {
     return (
       <div className="rest-line">
-        <span className="eyebrow">Rest {fmtRestMMSS(seconds)}</span>
+        <span className="eyebrow">Repos {fmtRestMMSS(seconds)}</span>
         <button
           type="button"
           className="text-button rest-action"
-          aria-label={`Start rest for ${label}`}
+          aria-label={`Démarrer le repos de ${label}`}
           onClick={() => startFor(seconds)}
         >
-          Start
+          Lancer
         </button>
       </div>
     );
@@ -171,7 +173,7 @@ function RestTrigger({
   return (
     <div>
       <div className="rest-line">
-        <span className="eyebrow">{remaining ? "Rest" : "Rest done"}</span>
+        <span className="eyebrow">{remaining ? "Repos" : "Repos terminé"}</span>
         <span className="il-num text-lg font-semibold" role="timer">
           {fmtTimer(remaining)}
         </span>
@@ -195,12 +197,12 @@ function RestTrigger({
           className="text-button rest-action"
           onClick={() => startFor(seconds)}
         >
-          Restart
+          Relancer
         </button>
         <button
           type="button"
           className="icon-button-sm"
-          aria-label="Stop rest"
+          aria-label="Arrêter le repos"
           onClick={onStopRest}
         >
           <X size={14} />
@@ -250,14 +252,14 @@ export default function WorkoutScreen({
   return (
     <section className="flex flex-col gap-5">
       <button className="text-button justify-start" onClick={onBack}>
-        <ArrowLeft size={17} /> Back
+        <ArrowLeft size={17} /> Retour à l’accueil
       </button>
       <div>
         <p className="eyebrow">
-          {active.editId ? "EDIT HISTORY" : "WORKOUT IN PROGRESS"}
+          {active.editId ? "MODIFIER L’HISTORIQUE" : "SÉANCE EN COURS"}
         </p>
         <h1 className="page-title mt-2">
-          {active.fromTemplate || "Free workout"}
+          {active.fromTemplate || "Séance libre"}
         </h1>
       </div>
       <SessionTimers
@@ -269,8 +271,10 @@ export default function WorkoutScreen({
       />
       {!active.entries.length && (
         <div className="empty-state">
-          <h2>What's your first exercise?</h2>
-          <p>Add your exercises, then log your results set by set.</p>
+          <h2>Quel est ton premier exercice ?</h2>
+          <p>
+            Ajoute tes exercices, puis saisis tes résultats série par série.
+          </p>
         </div>
       )}
       {active.entries.map((entry, index) => {
@@ -303,10 +307,10 @@ export default function WorkoutScreen({
                 className="exercise-toggle flex-1"
                 onClick={() => toggleCollapsed(entry.id)}
                 aria-expanded={!isCollapsed}
-                aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${entry.name}`}
+                aria-label={`${isCollapsed ? "Déplier" : "Replier"} ${entry.name}`}
               >
                 <p className="eyebrow">
-                  {superSet ? "SUPERSET" : "EXERCISE"} /{" "}
+                  {superSet ? "SUPERSET" : "EXERCICE"} /{" "}
                   {String(index + 1).padStart(2, "0")}
                 </p>
                 <span className="flex items-center gap-2">
@@ -323,7 +327,7 @@ export default function WorkoutScreen({
               {!lockedExercises && (
                 <button
                   className="icon-button"
-                  aria-label={`Edit ${entry.name}`}
+                  aria-label={`Modifier ${entry.name}`}
                   onClick={() => {
                     setEditingId(entry.id);
                     picker.open(entry);
@@ -340,7 +344,7 @@ export default function WorkoutScreen({
                     {sub.label}
                   </h2>
                   <div className="eyebrow mt-1.5">
-                    {entry.sets.length} sets
+                    {entry.sets.length} séries
                     {targetSummary(entry.sets, sub.suffix) &&
                       ` · Reps ${targetSummary(entry.sets, sub.suffix)}`}
                     {/* Once expanded, the running rest timer gets its own
@@ -349,7 +353,7 @@ export default function WorkoutScreen({
                       <>
                         {" · "}
                         {sub.rest === 0
-                          ? "No rest"
+                          ? "Sans repos"
                           : fmtRestMMSS(sub.rest ?? 90)}
                       </>
                     )}
@@ -411,12 +415,12 @@ export default function WorkoutScreen({
                           <button
                             className={`set-check ${validated ? "checked" : ""}`}
                             disabled={!validated && !canValidate}
-                            aria-label={`${validated ? "Undo" : "Complete"} ${sub.label}, set ${i + 1}`}
+                            aria-label={`${validated ? "Dévalider" : "Valider"} ${sub.label}, série ${i + 1}`}
                             aria-pressed={validated}
                             title={
                               canValidate
-                                ? "Complete this set"
-                                : "Enter a weight (0 is fine) and reps"
+                                ? "Valider cette série"
+                                : "Renseigne une charge (0 accepté) et les répétitions"
                             }
                             onClick={() =>
                               a.completeSet(
@@ -432,7 +436,7 @@ export default function WorkoutScreen({
                           </button>
                           <input
                             className="il-input il-num w-full text-center"
-                            aria-label={`${sub.label}, set ${i + 1}, weight in kg`}
+                            aria-label={`${sub.label}, série ${i + 1}, charge en kg`}
                             type="number"
                             min="0"
                             step="any"
@@ -462,7 +466,7 @@ export default function WorkoutScreen({
                           />
                           <input
                             className="il-input il-num w-full text-center"
-                            aria-label={`${sub.label}, set ${i + 1}, reps done`}
+                            aria-label={`${sub.label}, série ${i + 1}, répétitions réalisées`}
                             type="number"
                             min="1"
                             step="1"
@@ -493,7 +497,7 @@ export default function WorkoutScreen({
                           />
                           {showRpe && (
                             <SetRpeField
-                              label={`${sub.label}, set ${i + 1}, RPE`}
+                              label={`${sub.label}, série ${i + 1}, RPE ressenti`}
                               value={set["rpe" + sub.suffix]}
                               onChange={(value) => updateSet(entry.id, i, "rpe" + sub.suffix, value)}
                             />
@@ -520,8 +524,8 @@ export default function WorkoutScreen({
                 className="text-button text-xs mt-2.5 rpe-toggle-row"
                 onClick={() => a.enableRpe(entry.id)}
               >
-                <span>RPE per set</span>
-                <span className="muted">Enable</span>
+                <span>RPE par série</span>
+                <span className="muted">Activer</span>
               </button>
             )}
             {!isCollapsed && !lockedExercises && (
@@ -529,7 +533,7 @@ export default function WorkoutScreen({
                 className="text-button text-xs mt-2.5"
                 onClick={() => setRemove(entry)}
               >
-                Remove this exercise
+                Retirer cet exercice
               </button>
             )}
           </article>
@@ -543,11 +547,11 @@ export default function WorkoutScreen({
             picker.open();
           }}
         >
-          <Plus size={17} /> Add exercise
+          <Plus size={17} /> Ajouter un exercice
         </button>
       )}
       <button className="text-button" onClick={() => setDiscard(true)}>
-        {active.editId ? "Cancel changes" : "Discard workout"}
+        {active.editId ? "Annuler les modifications" : "Abandonner la séance"}
       </button>
       {picker.showPicker && (
         <ExercisePickerModal
@@ -562,10 +566,10 @@ export default function WorkoutScreen({
         <Drawer
           title={
             remove
-              ? "Remove this exercise?"
+              ? "Retirer cet exercice ?"
               : active.editId
-                ? "Cancel changes?"
-                : "Discard workout?"
+                ? "Annuler les modifications ?"
+                : "Abandonner la séance ?"
           }
           onClose={() => {
             setDiscard(false);
@@ -574,10 +578,10 @@ export default function WorkoutScreen({
         >
           <p className="muted text-sm mb-5">
             {remove
-              ? `The sets logged for "${remove.name}" will be removed from this workout.`
+              ? `Les séries saisies pour « ${remove.name} » seront retirées de cette séance.`
               : active.editId
-                ? "The saved workout will stay unchanged."
-                : "This workout's results won't be saved."}
+                ? "La séance enregistrée restera inchangée."
+                : "Les résultats de cette séance ne seront pas enregistrés."}
           </p>
           <div className="flex gap-3">
             <button
@@ -587,7 +591,7 @@ export default function WorkoutScreen({
                 setRemove(null);
               }}
             >
-              Continue
+              Continuer
             </button>
             <button
               className="primary flex-1"
@@ -598,7 +602,7 @@ export default function WorkoutScreen({
                 } else onDiscard();
               }}
             >
-              {remove ? "Remove" : "Confirm"}
+              {remove ? "Retirer" : "Confirmer"}
             </button>
           </div>
         </Drawer>

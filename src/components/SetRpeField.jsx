@@ -10,7 +10,7 @@ export default function SetRpeField({ label, value, onChange }) {
         value={normalizeRpe(value) ?? ""}
         onChange={(event) => onChange(event.target.value)}
       >
-        <option value="" aria-label="No RPE">—</option>
+        <option value="" aria-label="Sans RPE">—</option>
         {Array.from({ length: 5 }, (_, i) => i + 6).map((n) => (
           <option key={n} value={n} aria-label={`RPE ${n}`}>{`SUB ${n}`}</option>
         ))}
